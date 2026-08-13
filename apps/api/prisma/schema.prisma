@@ -1,0 +1,432 @@
+// ============================================================
+// AI Content Factory — Prisma Schema
+// Full production schema for all platform entities
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & Auth ─────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         UserRole @default(EDITOR)
+  isActive     Boolean  @default(true)
+  brandId      String?
+
+  brand         Brand?         @relation(fields: [brandId], references: [id])
+  refreshTokens RefreshToken[]
+  videos        Video[]
+  logs          Log[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  permissions Permission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model Permission {
+  id       String @id @default(uuid())
+  action   String // e.g. "create", "read", "update", "delete"
+  resource String // e.g. "videos", "users", "api-keys"
+  roleId   String
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([action, resource, roleId])
+  @@map("permissions")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+// ─── Brands & Channels ────────────────────────────────────────
+
+model Brand {
+  id            String         @id @default(uuid())
+  name          String
+  slug          String         @unique
+  logoUrl       String?
+  voiceTone     String         @default("Professional and engaging")
+  styleGuide    String?        @db.Text
+  videoStrategy VideoStrategy  @default(FFMPEG_ASSEMBLY)
+  isActive      Boolean        @default(true)
+
+  users    User[]
+  channels Channel[]
+  videos   Video[]
+  prompts  Prompt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("brands")
+}
+
+model Channel {
+  id                String   @id @default(uuid())
+  brandId           String
+  platform          Platform
+  name              String
+  platformChannelId String?
+  accessToken       String?  @db.Text // encrypted
+  refreshToken      String?  @db.Text // encrypted
+  tokenExpiresAt    DateTime?
+  isConnected       Boolean  @default(false)
+  subscriberCount   Int?
+  viewCount         BigInt?
+  config            Json     @default("{}")
+
+  brand   Brand   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  videos  Video[]
+  uploads Upload[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brandId, platform])
+  @@map("channels")
+}
+
+enum Platform {
+  YOUTUBE
+  TIKTOK
+  INSTAGRAM
+  FACEBOOK
+  TWITTER
+  LINKEDIN
+}
+
+enum VideoStrategy {
+  FFMPEG_ASSEMBLY
+  AI_VIDEO_PROVIDER
+}
+
+// ─── Content & Videos ─────────────────────────────────────────
+
+model Video {
+  id              String      @id @default(uuid())
+  title           String
+  description     String?     @db.Text
+  status          VideoStatus @default(DRAFT)
+  brandId         String
+  channelId       String?
+  createdById     String
+  pipelineStep    String?
+  durationSeconds Int?
+  thumbnailUrl    String?
+  videoUrl        String?
+  tags            String[]
+  publishedAt     DateTime?
+  scheduledAt     DateTime?
+  
+  // SEO
+  seoTitle        String?
+  seoDescription  String?
+  seoKeywords     String[]
+
+  brand     Brand      @relation(fields: [brandId], references: [id])
+  channel   Channel?   @relation(fields: [channelId], references: [id])
+  createdBy User       @relation(fields: [createdById], references: [id])
+  script    Script?
+  jobs      Job[]
+  assets    Asset[]
+  uploads   Upload[]
+  analytics Analytics[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brandId, status])
+  @@index([channelId])
+  @@map("videos")
+}
+
+enum VideoStatus {
+  DRAFT
+  PROCESSING
+  RENDERED
+  PUBLISHED
+  FAILED
+  SCHEDULED
+}
+
+model Script {
+  id           String  @id @default(uuid())
+  videoId      String  @unique
+  content      Json    // ScriptContent object
+  rawText      String  @db.Text
+  version      Int     @default(1)
+  isFactChecked Boolean @default(false)
+  seoScore     Int?
+  wordCount    Int?
+  
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("scripts")
+}
+
+// ─── Jobs & Queue ─────────────────────────────────────────────
+
+model Job {
+  id          String    @id @default(uuid())
+  bullJobId   String?   // BullMQ job ID
+  queue       String
+  status      JobStatus @default(WAITING)
+  progress    Int       @default(0)
+  videoId     String?
+  payload     Json      @default("{}")
+  result      Json?
+  error       String?   @db.Text
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+
+  video Video? @relation(fields: [videoId], references: [id])
+  logs  Log[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([videoId, queue])
+  @@index([status])
+  @@map("jobs")
+}
+
+enum JobStatus {
+  WAITING
+  ACTIVE
+  COMPLETED
+  FAILED
+  DELAYED
+  PAUSED
+}
+
+// ─── Assets & Storage ─────────────────────────────────────────
+
+model Asset {
+  id         String    @id @default(uuid())
+  videoId    String?
+  type       AssetType
+  url        String    // MinIO URL
+  key        String    // MinIO object key
+  mimeType   String
+  sizeBytes  BigInt
+  metadata   Json      @default("{}")
+  isPublic   Boolean   @default(false)
+
+  video Video? @relation(fields: [videoId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([videoId, type])
+  @@map("assets")
+}
+
+enum AssetType {
+  AUDIO
+  IMAGE
+  VIDEO
+  THUMBNAIL
+  SUBTITLE
+  DOCUMENT
+}
+
+// ─── AI Providers ─────────────────────────────────────────────
+
+model Provider {
+  id           String      @id @default(uuid())
+  name         String      @unique // AIProviderName enum value
+  displayName  String
+  enabled      Boolean     @default(false)
+  capabilities String[]    // AICapability enum values
+  preferredFor String[]    // AICapability enum values
+  modelConfig  Json        @default("{}")
+  baseUrl      String?     // for Ollama/self-hosted
+
+  apiKeys ApiKey[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("providers")
+}
+
+model ApiKey {
+  id           String  @id @default(uuid())
+  providerId   String
+  label        String
+  encryptedKey String  @db.Text // AES-256-GCM encrypted
+  isActive     Boolean @default(true)
+  lastUsedAt   DateTime?
+  usageCount   Int     @default(0)
+
+  // Social platform specific keys
+  platform     String? // Platform enum value
+  keyType      String  @default("api") // "api" | "oauth_client" | "oauth_secret"
+
+  provider Provider? @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([providerId])
+  @@map("api_keys")
+}
+
+// ─── Publishing & Analytics ───────────────────────────────────
+
+model Upload {
+  id                  String   @id @default(uuid())
+  videoId             String
+  channelId           String
+  platform            Platform
+  platformVideoId     String?
+  platformUrl         String?
+  title               String
+  description         String   @db.Text
+  tags                String[]
+  status              String   @default("PENDING")
+  publishedAt         DateTime?
+  scheduledAt         DateTime?
+  errorMessage        String?
+
+  video   Video   @relation(fields: [videoId], references: [id])
+  channel Channel @relation(fields: [channelId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([videoId])
+  @@index([channelId, platform])
+  @@map("uploads")
+}
+
+model Analytics {
+  id                String   @id @default(uuid())
+  videoId           String
+  platform          Platform
+  views             BigInt   @default(0)
+  likes             Int      @default(0)
+  comments          Int      @default(0)
+  shares            Int      @default(0)
+  avgViewDuration   Float?
+  clickThroughRate  Float?
+  impressions       BigInt?
+  revenue           Float?
+  syncedAt          DateTime @default(now())
+
+  video Video @relation(fields: [videoId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([videoId, platform])
+  @@map("analytics")
+}
+
+// ─── Prompts & Templates ──────────────────────────────────────
+
+model Prompt {
+  id          String  @id @default(uuid())
+  brandId     String?
+  name        String
+  category    String  // "research", "script", "seo", "thumbnail", etc.
+  template    String  @db.Text
+  variables   String[] // e.g. ["topic", "tone", "duration"]
+  version     Int     @default(1)
+  isActive    Boolean @default(true)
+  isGlobal    Boolean @default(false) // available to all brands
+
+  brand Brand? @relation(fields: [brandId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, isActive])
+  @@map("prompts")
+}
+
+model Template {
+  id       String @id @default(uuid())
+  name     String
+  type     String // "video", "short", "blog"
+  config   Json   @default("{}")
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("templates")
+}
+
+// ─── Logs ─────────────────────────────────────────────────────
+
+model Log {
+  id        String   @id @default(uuid())
+  level     LogLevel
+  message   String   @db.Text
+  context   String?
+  userId    String?
+  jobId     String?
+  metadata  Json     @default("{}")
+
+  user User? @relation(fields: [userId], references: [id])
+  job  Job?  @relation(fields: [jobId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([level, createdAt])
+  @@index([userId])
+  @@map("logs")
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}

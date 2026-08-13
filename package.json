@@ -1,0 +1,31 @@
+{
+  "name": "ai-content-factory",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Content Factory — Production-ready self-hosted AI content operating system",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter api dev\" \"pnpm --filter web dev\"",
+    "build": "pnpm --filter shared build && pnpm --filter api build && pnpm --filter web build",
+    "test": "pnpm --filter api test && pnpm --filter web test",
+    "test:e2e": "pnpm --filter api test:e2e",
+    "lint": "pnpm --recursive lint",
+    "db:migrate": "pnpm --filter api db:migrate",
+    "db:seed": "pnpm --filter api db:seed",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

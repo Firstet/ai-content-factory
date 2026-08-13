@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────────
+# Dockerfile.worker — BullMQ Workers
+# Shared image for all pipeline worker processes
+# ─────────────────────────────────────────────────────────────────
+
+FROM node:20-alpine AS deps
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+COPY package.json pnpm-workspace.yaml .npmrc ./
+COPY packages/shared/package.json ./packages/shared/
+COPY workers/package.json ./workers/
+
+RUN pnpm install --frozen-lockfile
+
+FROM node:20-alpine AS builder
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=deps /app/workers/node_modules ./workers/node_modules
+
+COPY packages/shared ./packages/shared
+COPY workers ./workers
+COPY tsconfig.json ./
+
+RUN pnpm --filter shared build
+RUN pnpm --filter workers build
+
+FROM node:20-alpine AS runner
+# Install ffmpeg for video workers
+RUN apk add --no-cache ffmpeg curl python3
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+COPY --from=deps /app/workers/node_modules ./workers/node_modules
+COPY --from=builder /app/workers/dist ./dist
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+
+# Default command overridden per service in docker-compose.yml
+CMD ["node", "dist/research/main.js"]

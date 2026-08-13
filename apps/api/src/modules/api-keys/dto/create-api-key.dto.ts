@@ -1,0 +1,27 @@
+import { IsString, IsUUID, IsOptional, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateApiKeyDto {
+  @ApiProperty({ description: 'Provider DB ID' })
+  @IsUUID()
+  providerId: string;
+
+  @ApiProperty({ example: 'Production OpenAI Key' })
+  @IsString()
+  label: string;
+
+  @ApiProperty({ example: 'sk-...', description: 'The raw API key (will be encrypted)' })
+  @IsString()
+  @MinLength(8)
+  key: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  platform?: string;
+
+  @ApiProperty({ required: false, default: 'api' })
+  @IsOptional()
+  @IsString()
+  keyType?: string;
+}
