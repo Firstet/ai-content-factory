@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { MediaUploader } from '@/components/common/MediaUploader';
 import { useToast } from '@/components/common/Toast';
+import { api } from '@/lib/api';
 
 const DEFAULT_PROVIDERS = [
   { name: 'OPENAI', displayName: 'OpenAI (Official GPT-4o)', placeholder: 'sk-proj-...', defaultBaseUrl: 'https://api.openai.com/v1' },
