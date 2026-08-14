@@ -12,16 +12,15 @@ services:
     container_name: acf_postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-acf_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-acf_password}
+      POSTGRES_DB: ${POSTGRES_DB:-acf_db}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-acf_user} -d ${POSTGRES_DB:-acf_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -57,8 +56,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-acf_minio_access}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-acf_minio_secret_key_12345}
     volumes:
       - minio_data:/data
     ports:
@@ -83,9 +82,9 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-        mc alias set local http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY} &&
-        mc mb --ignore-existing local/${MINIO_BUCKET} &&
-        mc anonymous set download local/${MINIO_BUCKET}/public &&
+        mc alias set local http://minio:9000 ${MINIO_ACCESS_KEY:-acf_minio_access} ${MINIO_SECRET_KEY:-acf_minio_secret_key_12345} &&
+        mc mb --ignore-existing local/${MINIO_BUCKET:-acf-assets} &&
+        mc anonymous set download local/${MINIO_BUCKET:-acf-assets}/public || true &&
         echo 'MinIO bucket initialized.'
       "
     networks:
@@ -105,13 +104,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-    volumes:
-      - ./apps/api:/app/apps/api:delegated
-      - /app/apps/api/node_modules
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET:-f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8}
+      ENCRYPTION_SECRET: ${ENCRYPTION_SECRET:-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
+      APP_URL: ${APP_URL:-http://localhost:3002}
+      YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID:-}
+      YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET:-}
+      YOUTUBE_REDIRECT_URI: ${YOUTUBE_REDIRECT_URI:-}
+    ports:
+      - "3001:3001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
       interval: 30s
@@ -119,8 +123,6 @@ services:
       retries: 5
     networks:
       - acf_network
-    labels:
-      - "traefik.enable=false"
 
   # ─────────────────────────────────────────
   # Next.js Web App
@@ -133,11 +135,12 @@ services:
     restart: unless-stopped
     depends_on:
       - api
-    env_file: .env
-    volumes:
-      - ./apps/web:/app/apps/web:delegated
-      - /app/apps/web/node_modules
-      - /app/apps/web/.next
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api}
+    ports:
+      - "3002:3000"
     networks:
       - acf_network
 
@@ -156,7 +159,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     networks:
       - acf_network
 
@@ -172,7 +178,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     networks:
       - acf_network
 
@@ -188,7 +197,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     networks:
       - acf_network
 
@@ -204,7 +216,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     networks:
       - acf_network
 
@@ -220,7 +235,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     volumes:
       - render_cache:/tmp/renders
     networks:
@@ -238,7 +256,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     networks:
       - acf_network
 
@@ -254,7 +275,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     networks:
       - acf_network
 
@@ -270,7 +294,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    env_file: .env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     networks:
       - acf_network
 
@@ -285,14 +312,11 @@ services:
       - api
       - web
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
       - nginx_logs:/var/log/nginx
-      - certbot_webroot:/var/www/certbot:ro
-      - certbot_certs:/etc/letsencrypt:ro
     healthcheck:
       test: ["CMD", "nginx", "-t"]
       interval: 30s
@@ -314,10 +338,6 @@ volumes:
   render_cache:
     driver: local
   nginx_logs:
-    driver: local
-  certbot_webroot:
-    driver: local
-  certbot_certs:
     driver: local
 
 # ─────────────────────────────────────────
