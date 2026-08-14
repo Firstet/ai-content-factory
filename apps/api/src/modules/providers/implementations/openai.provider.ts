@@ -35,7 +35,7 @@ export class OpenAIProvider extends BaseProvider {
       quality: opts.quality || 'hd',
       n: opts.n || 1,
     });
-    return response.data.map((img) => img.url!).filter(Boolean);
+    return (response.data || []).map((img) => img.url!).filter(Boolean);
   }
 
   async generateSpeech(text: string, opts: SpeechOptions & { apiKey: string } = {} as any): Promise<Buffer> {

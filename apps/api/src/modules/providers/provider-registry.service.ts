@@ -22,7 +22,7 @@ import { OllamaProvider } from './implementations/ollama.provider';
 export class ProviderRegistry {
   private readonly logger = new Logger(ProviderRegistry.name);
 
-  private readonly providers: Map<string, AIProvider> = new Map([
+  private readonly providers = new Map<string, AIProvider>([
     ['OPENAI', new OpenAIProvider()],
     ['GEMINI', new GeminiProvider()],
     ['ANTHROPIC', new AnthropicProvider()],
@@ -56,7 +56,7 @@ export class ProviderRegistry {
     });
 
     // Sort: preferred-for this capability first
-    const sorted = dbProviders.sort((a, b) => {
+    const sorted = dbProviders.sort((a: any, b: any) => {
       const aPreferred = a.preferredFor.includes(capability) ? 1 : 0;
       const bPreferred = b.preferredFor.includes(capability) ? 1 : 0;
       return bPreferred - aPreferred;

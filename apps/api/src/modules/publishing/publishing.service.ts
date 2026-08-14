@@ -25,7 +25,7 @@ export class PublishingService {
     twitter: TwitterPublisher,
     linkedin: LinkedInPublisher,
   ) {
-    this.publishers = new Map([
+    this.publishers = new Map<string, SocialPublisher>([
       ['YOUTUBE', youtube],
       ['TIKTOK', tiktok],
       ['INSTAGRAM', instagram],
