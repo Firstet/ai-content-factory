@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Shell } from '@/components/layout/Shell';
-import { Video as VideoIcon, Play, ExternalLink, Trash2 } from 'lucide-react';
+import { Video as VideoIcon, Play, Trash2, Sparkles, PlusCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 
@@ -12,7 +12,7 @@ export default function VideosPage() {
   async function loadVideos() {
     try {
       const res = await api.get('/videos');
-      setVideos(res.data);
+      setVideos(res.data || []);
     } catch (err) {
       console.error(err);
     }
@@ -34,74 +34,86 @@ export default function VideosPage() {
 
   return (
     <Shell>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="max-w-6xl mx-auto space-y-8 pb-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <VideoIcon className="w-5 h-5 text-indigo-400" />
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
+                <VideoIcon className="w-3.5 h-3.5 text-indigo-400" />
+                Rendered Studio Repository
+              </span>
+            </div>
+            <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
               Generated Videos Repository
             </h1>
-            <p className="text-xs text-slate-400 mt-1">Browse, view scripts, monitor renders, and manage all videos.</p>
+            <p className="text-xs text-slate-400 mt-1 max-w-xl">
+              Browse, monitor, and manage all rendered videos and shorts created by your AI Content Studio.
+            </p>
           </div>
+
           <Link
-            href="/content/new"
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 transition-all"
+            href="/content/wizard"
+            className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 text-white font-extrabold text-xs shadow-xl shadow-indigo-500/25 flex items-center gap-2 transition-all"
           >
-            <Play className="w-3.5 h-3.5 fill-white" />
-            <span>New Video</span>
+            <PlusCircle className="w-4.5 h-4.5" />
+            <span>Launch Content Wizard</span>
           </Link>
         </div>
 
-        <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
+        <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-white/10">
+            <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-white/10">
               <tr>
-                <th className="px-6 py-4 font-semibold">Title</th>
-                <th className="px-6 py-4 font-semibold">Brand</th>
-                <th className="px-6 py-4 font-semibold">Status</th>
-                <th className="px-6 py-4 font-semibold">Duration</th>
-                <th className="px-6 py-4 font-semibold">Created</th>
-                <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                <th className="px-6 py-4 font-bold">Video Title</th>
+                <th className="px-6 py-4 font-bold">Brand</th>
+                <th className="px-6 py-4 font-bold">Status</th>
+                <th className="px-6 py-4 font-bold">Duration</th>
+                <th className="px-6 py-4 font-bold">Created Date</th>
+                <th className="px-6 py-4 font-bold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {videos.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No videos generated yet. Launch one from the dashboard!</td>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">
+                    No videos generated yet. Launch your first content plan from the dashboard!
+                  </td>
                 </tr>
               ) : (
                 videos.map((v) => (
                   <tr key={v.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-6 py-4 font-semibold text-slate-200">
-                      <Link href={`/pipeline/${v.id}`} className="hover:text-indigo-400 transition-colors">
+                    <td className="px-6 py-4 font-bold text-white">
+                      <Link href="/dashboard" className="hover:text-indigo-300 transition-colors">
                         {v.title}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-slate-400">{v.brand?.name || 'Default Brand'}</td>
+                    <td className="px-6 py-4 text-slate-400">{v.brand?.name || 'Primary Studio Brand'}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-0.5 rounded text-[9px] font-bold uppercase ${
-                        v.status === 'PUBLISHED'
-                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          : v.status === 'RENDERED'
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                          : v.status === 'FAILED'
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                      }`}>
+                      <span
+                        className={`px-2.5 py-0.5 rounded text-[9px] font-black uppercase ${
+                          v.status === 'PUBLISHED'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : v.status === 'RENDERED'
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                            : v.status === 'FAILED'
+                            ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                            : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        }`}
+                      >
                         {v.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-slate-400">{v.durationSeconds ? `${v.durationSeconds}s` : 'N/A'}</td>
+                    <td className="px-6 py-4 text-slate-400 font-mono text-[11px]">
+                      {v.durationSeconds ? `${v.durationSeconds}s` : 'N/A'}
+                    </td>
                     <td className="px-6 py-4 text-slate-400">{new Date(v.createdAt).toLocaleDateString()}</td>
                     <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        <Link href={`/pipeline/${v.id}`} className="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
-                          Monitor <ExternalLink className="w-3 h-3" />
-                        </Link>
-                        <button onClick={() => handleDelete(v.id)} className="text-red-400 hover:text-red-300">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleDelete(v.id)}
+                        className="p-2 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/5 transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 ))
