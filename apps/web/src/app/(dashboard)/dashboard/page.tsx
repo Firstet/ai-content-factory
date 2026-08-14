@@ -21,11 +21,13 @@ import {
 import Link from 'next/link';
 import { api } from '@/lib/api';
 
+import { useToast } from '@/components/common/Toast';
+
 export default function CreatorDashboardPage() {
+  const { success, error } = useToast();
   const [loading, setLoading] = useState(true);
   const [generatingNow, setGeneratingNow] = useState(false);
   const [automationActive, setAutomationActive] = useState(true);
-  const [successMsg, setSuccessMsg] = useState('');
   const [videos, setVideos] = useState<any[]>([]);
 
   useEffect(() => {
@@ -45,7 +47,6 @@ export default function CreatorDashboardPage() {
   const handleGenerateNow = async () => {
     setGeneratingNow(true);
     try {
-      // Trigger instant automation pipeline cycle
       const res = await api.post('/pipeline/start', {
         topic: 'Top 5 AI Tools & Productivity Hacks for 2026',
         targetDuration: 5,
@@ -55,10 +56,9 @@ export default function CreatorDashboardPage() {
         runFullPipeline: true,
       });
 
-      setSuccessMsg(`🚀 AI Content Studio launched new video generation cycle! (ID: ${res.data.videoId.substring(0, 8)})`);
-      setTimeout(() => setSuccessMsg(''), 6000);
+      success('Pipeline Launched! 🚀', `AI Content Studio started generating video (${res.data.videoId.substring(0, 8)})`);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to start video generation');
+      error('Generation Failed', err.response?.data?.message || 'Unable to start video pipeline. Check API keys in settings.');
     } finally {
       setGeneratingNow(false);
     }

@@ -20,7 +20,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { MediaUploader } from '@/components/common/MediaUploader';
-import { api } from '@/lib/api';
+import { useToast } from '@/components/common/Toast';
 
 const DEFAULT_PROVIDERS = [
   { name: 'OPENAI', displayName: 'OpenAI (Official GPT-4o)', placeholder: 'sk-proj-...', defaultBaseUrl: 'https://api.openai.com/v1' },
@@ -32,6 +32,7 @@ const DEFAULT_PROVIDERS = [
 ];
 
 export default function CreatorSettingsPage() {
+  const { success, error } = useToast();
   const [activeTab, setActiveTab] = useState<'API_KEYS' | 'AI_ENGINES' | 'BRANDING' | 'PUBLISHING' | 'NOTIFICATIONS'>('API_KEYS');
 
   // API Key Vault State
@@ -42,7 +43,6 @@ export default function CreatorSettingsPage() {
   const [baseUrlInput, setBaseUrlInput] = useState('https://api.deepseek.com/v1');
   const [showKey, setShowKey] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
 
   // Preferred AI Engine Selection
   const [researchProvider, setResearchProvider] = useState('OPENAI_COMPATIBLE');
@@ -85,30 +85,29 @@ export default function CreatorSettingsPage() {
         providerId: selectedProviderName,
         label: label || `${selectedProviderName} Key`,
         key: keyInput,
-        platform: baseUrlInput, // Stores custom base URL
+        platform: baseUrlInput,
       });
 
       setKeyInput('');
-      setSuccessMsg(`Successfully saved ${selectedProviderName} API key encrypted in database!`);
-      setTimeout(() => setSuccessMsg(''), 4000);
+      success(`Saved API Key!`, `Successfully encrypted and saved ${selectedProviderName} key in database.`);
       loadKeyVault();
     } catch (err: any) {
       const errorMsg = Array.isArray(err.response?.data?.message)
         ? err.response.data.message.join(', ')
-        : err.response?.data?.message || 'Failed to save API key. Please check connection.';
-      alert(errorMsg);
+        : err.response?.data?.message || 'Failed to save API key. Please check network connection.';
+      error('API Key Save Failed', errorMsg);
     } finally {
       setSavingKey(false);
     }
   };
 
   const handleDeleteKey = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this API key?')) return;
     try {
       await api.delete(`/api-keys/${id}`);
+      success('API Key Deleted', 'Key has been removed from database.');
       loadKeyVault();
     } catch (err) {
-      alert('Failed to delete key');
+      error('Deletion Failed', 'Unable to remove API key.');
     }
   };
 
