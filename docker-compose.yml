@@ -1,5 +1,5 @@
 # ==================================================
-# AI Content Factory — Docker Compose
+# AI Content Factory — Dokploy Compatible Compose
 # Start everything: docker compose up --build -d
 # ==================================================
 
@@ -9,7 +9,6 @@ services:
   # ─────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
-    container_name: acf_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-acf_user}
@@ -32,7 +31,6 @@ services:
   # ─────────────────────────────────────────
   redis:
     image: redis:7-alpine
-    container_name: acf_redis
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
     volumes:
@@ -52,7 +50,6 @@ services:
   # ─────────────────────────────────────────
   minio:
     image: minio/minio:latest
-    container_name: acf_minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -76,7 +73,6 @@ services:
   # ─────────────────────────────────────────
   minio-init:
     image: minio/mc:latest
-    container_name: acf_minio_init
     depends_on:
       minio:
         condition: service_healthy
@@ -97,7 +93,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.api
-    container_name: acf_api
     restart: unless-stopped
     depends_on:
       postgres:
@@ -131,7 +126,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.web
-    container_name: acf_web
     restart: unless-stopped
     depends_on:
       - api
@@ -151,7 +145,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
-    container_name: acf_worker_research
     restart: unless-stopped
     command: ["node", "dist/workers/research/main.js"]
     depends_on:
@@ -170,7 +163,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
-    container_name: acf_worker_script
     restart: unless-stopped
     command: ["node", "dist/workers/script/main.js"]
     depends_on:
@@ -189,7 +181,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
-    container_name: acf_worker_voice
     restart: unless-stopped
     command: ["node", "dist/workers/voice/main.js"]
     depends_on:
@@ -208,7 +199,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
-    container_name: acf_worker_image
     restart: unless-stopped
     command: ["node", "dist/workers/image/main.js"]
     depends_on:
@@ -227,7 +217,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
-    container_name: acf_worker_video
     restart: unless-stopped
     command: ["node", "dist/workers/video/main.js"]
     depends_on:
@@ -248,7 +237,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
-    container_name: acf_worker_thumbnail
     restart: unless-stopped
     command: ["node", "dist/workers/thumbnail/main.js"]
     depends_on:
@@ -267,7 +255,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
-    container_name: acf_worker_upload
     restart: unless-stopped
     command: ["node", "dist/workers/upload/main.js"]
     depends_on:
@@ -286,7 +273,6 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
-    container_name: acf_worker_analytics
     restart: unless-stopped
     command: ["node", "dist/workers/analytics/main.js"]
     depends_on:
@@ -306,7 +292,6 @@ services:
   # ─────────────────────────────────────────
   nginx:
     image: nginx:1.25-alpine
-    container_name: acf_nginx
     restart: unless-stopped
     depends_on:
       - api
