@@ -132,6 +132,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      HOSTNAME: "0.0.0.0"
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://169.58.142.29:3001/api}
     ports:
       - "3002:3000"
