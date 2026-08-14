@@ -17,6 +17,7 @@ import {
   HardDrive,
   Terminal,
   CreditCard,
+  Settings,
   Zap,
   Sparkles,
   PlusCircle,
