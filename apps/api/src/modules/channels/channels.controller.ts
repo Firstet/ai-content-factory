@@ -18,14 +18,19 @@ export class ChannelsController {
   @Get('oauth/youtube/url')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  getYouTubeOAuthUrl(@Query('redirectUri') redirectUri?: string) {
-    return this.service.getYouTubeOAuthUrl(redirectUri);
+  getYouTubeOAuthUrl(
+    @Query('redirectUri') redirectUri?: string,
+    @Query('clientId') clientId?: string,
+  ) {
+    return this.service.getYouTubeOAuthUrl(redirectUri, clientId);
   }
 
   @Get('oauth/youtube/callback')
   async handleYouTubeCallback(
     @Query('code') code: string,
     @Query('error') error: string,
+    @Query('clientId') clientId: string,
+    @Query('clientSecret') clientSecret: string,
     @Res() res: any,
   ) {
     const webUrl = process.env.APP_URL || 'http://localhost:3002';
@@ -33,7 +38,7 @@ export class ChannelsController {
       return res.redirect(`${webUrl}/channels?error=${encodeURIComponent(error || 'No authorization code provided')}`);
     }
     try {
-      await this.service.handleYouTubeOAuthCallback(code);
+      await this.service.handleYouTubeOAuthCallback(code, undefined, clientId, clientSecret);
       return res.redirect(`${webUrl}/channels?status=connected&platform=YOUTUBE`);
     } catch (err: any) {
       return res.redirect(`${webUrl}/channels?error=${encodeURIComponent(err.message || 'OAuth authentication failed')}`);

@@ -26,7 +26,17 @@ export class ChannelsService {
     return this.prisma.channel.findUniqueOrThrow({ where: { id } });
   }
 
-  async create(data: { brandId?: string; platform: string; name: string; platformChannelId?: string }) {
+  async create(data: {
+    brandId?: string;
+    platform: string;
+    name: string;
+    platformChannelId?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    clientId?: string;
+    clientSecret?: string;
+    config?: any;
+  }) {
     let brandId = data.brandId;
     if (!brandId) {
       let brand = await this.prisma.brand.findFirst();
@@ -46,6 +56,13 @@ export class ChannelsService {
 
     const platformEnum = (data.platform || 'YOUTUBE').toUpperCase() as Platform;
 
+    const encryptedAccess = data.accessToken ? this.crypto.encrypt(data.accessToken) : null;
+    const encryptedRefresh = data.refreshToken ? this.crypto.encrypt(data.refreshToken) : null;
+
+    const configObj = data.config || {};
+    if (data.clientId) configObj.clientId = data.clientId;
+    if (data.clientSecret) configObj.clientSecret = this.crypto.encrypt(data.clientSecret);
+
     return this.prisma.channel.create({
       data: {
         brandId,
@@ -53,12 +70,22 @@ export class ChannelsService {
         name: data.name,
         platformChannelId: data.platformChannelId || `ch_${Date.now()}`,
         isConnected: true,
+        accessToken: encryptedAccess,
+        refreshToken: encryptedRefresh,
+        config: configObj,
       },
     });
   }
 
-  update(id: string, data: object) {
-    return this.prisma.channel.update({ where: { id }, data });
+  async update(id: string, data: any) {
+    const updateData: any = { ...data };
+    if (data.accessToken) {
+      updateData.accessToken = this.crypto.encrypt(data.accessToken);
+    }
+    if (data.refreshToken) {
+      updateData.refreshToken = this.crypto.encrypt(data.refreshToken);
+    }
+    return this.prisma.channel.update({ where: { id }, data: updateData });
   }
 
   /**
@@ -92,10 +119,10 @@ export class ChannelsService {
     };
   }
 
-  getYouTubeOAuthUrl(redirectUri?: string) {
-    const clientId = process.env.YOUTUBE_CLIENT_ID;
+  getYouTubeOAuthUrl(redirectUri?: string, customClientId?: string) {
+    const clientId = customClientId || process.env.YOUTUBE_CLIENT_ID;
     if (!clientId) {
-      return { configured: false, error: 'YOUTUBE_CLIENT_ID is not configured in .env' };
+      return { configured: false, error: 'OAuth Client ID not found. Enter your Client ID in the Connect Modal or Settings.' };
     }
     const rUri = redirectUri || process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:3001/api/channels/oauth/youtube/callback';
     const scope = encodeURIComponent(
@@ -105,13 +132,13 @@ export class ChannelsService {
     return { configured: true, url };
   }
 
-  async handleYouTubeOAuthCallback(code: string, redirectUri?: string) {
-    const clientId = process.env.YOUTUBE_CLIENT_ID;
-    const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
+  async handleYouTubeOAuthCallback(code: string, redirectUri?: string, customClientId?: string, customClientSecret?: string) {
+    const clientId = customClientId || process.env.YOUTUBE_CLIENT_ID;
+    const clientSecret = customClientSecret || process.env.YOUTUBE_CLIENT_SECRET;
     const rUri = redirectUri || process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:3001/api/channels/oauth/youtube/callback';
 
     if (!clientId || !clientSecret) {
-      throw new Error('YOUTUBE_CLIENT_ID or YOUTUBE_CLIENT_SECRET is missing in .env');
+      throw new Error('YOUTUBE_CLIENT_ID or YOUTUBE_CLIENT_SECRET is missing. Please enter them in the Add Channel Modal.');
     }
 
     // Exchange authorization code for tokens

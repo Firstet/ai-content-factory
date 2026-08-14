@@ -14,7 +14,10 @@ import {
   Trash2,
   PlusCircle,
   X,
-  Sparkles,
+  Key,
+  Globe,
+  Sliders,
+  Check,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -23,12 +26,20 @@ export default function ChannelsStudioPage() {
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showOAuthModal, setShowOAuthModal] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // New Channel Form
+  // Channel Creation Form State
   const [newChannelName, setNewChannelName] = useState('');
   const [newPlatform, setNewPlatform] = useState('YOUTUBE');
   const [platformChannelId, setPlatformChannelId] = useState('');
+  const [accessToken, setAccessToken] = useState('');
+  const [refreshToken, setRefreshToken] = useState('');
+  const [clientId, setClientId] = useState('');
+  const [clientSecret, setClientSecret] = useState('');
+
+  // YouTube OAuth Modal State
+  const [oauthClientId, setOauthClientId] = useState('');
 
   useEffect(() => {
     fetchChannels();
@@ -48,16 +59,18 @@ export default function ChannelsStudioPage() {
   const handleConnectYouTube = async () => {
     setConnecting(true);
     try {
-      const res = await api.get('/channels/oauth/youtube/url');
+      const query = oauthClientId ? `?clientId=${encodeURIComponent(oauthClientId)}` : '';
+      const res = await api.get(`/channels/oauth/youtube/url${query}`);
       if (res.data?.url) {
         window.location.href = res.data.url;
       } else {
-        alert(res.data?.error || 'Please configure YOUTUBE_CLIENT_ID in Settings → API Keys.');
+        alert(res.data?.error || 'Could not initiate OAuth URL. Please check your OAuth Client ID.');
       }
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to initiate YouTube OAuth connection');
     } finally {
       setConnecting(false);
+      setShowOAuthModal(false);
     }
   };
 
@@ -69,10 +82,19 @@ export default function ChannelsStudioPage() {
       await api.post('/channels', {
         name: newChannelName,
         platform: newPlatform,
-        platformChannelId: platformChannelId || `ch_${Date.now()}`,
+        platformChannelId: platformChannelId || `@${newChannelName.toLowerCase().replace(/\s+/g, '')}`,
+        accessToken: accessToken || undefined,
+        refreshToken: refreshToken || undefined,
+        clientId: clientId || undefined,
+        clientSecret: clientSecret || undefined,
       });
+      // Reset form
       setNewChannelName('');
       setPlatformChannelId('');
+      setAccessToken('');
+      setRefreshToken('');
+      setClientId('');
+      setClientSecret('');
       setShowAddModal(false);
       fetchChannels();
     } catch (err: any) {
@@ -108,21 +130,21 @@ export default function ChannelsStudioPage() {
               Connected Channels & Accounts
             </h1>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Connect unlimited YouTube channels and social media accounts to auto-publish rendered videos and shorts.
+              Add unlimited YouTube channels, TikTok, Instagram, X/Twitter, and social media accounts dynamically directly from this studio.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs border border-white/10 flex items-center gap-2 transition-all"
+              className="px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:opacity-90 text-white font-extrabold text-xs border border-indigo-400/30 shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>Add Channel Manually</span>
+              <span>Add Channel / API Keys</span>
             </button>
 
             <button
-              onClick={handleConnectYouTube}
+              onClick={() => setShowOAuthModal(true)}
               disabled={connecting}
               className="px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 hover:opacity-90 text-white font-extrabold text-xs shadow-xl shadow-red-500/25 flex items-center gap-2 transition-all disabled:opacity-50"
             >
@@ -131,7 +153,7 @@ export default function ChannelsStudioPage() {
               ) : (
                 <Youtube className="w-4.5 h-4.5 fill-white" />
               )}
-              <span>Connect YouTube via OAuth</span>
+              <span>Connect YouTube OAuth</span>
             </button>
           </div>
         </div>
@@ -142,23 +164,29 @@ export default function ChannelsStudioPage() {
             channels.map((ch) => (
               <div
                 key={ch.id}
-                className="glass-panel p-6 rounded-3xl border border-white/10 space-y-5 shadow-2xl relative overflow-hidden"
+                className="glass-panel p-6 rounded-3xl border border-white/10 space-y-5 shadow-2xl relative overflow-hidden group hover:border-indigo-500/30 transition-all"
               >
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-400">
-                      <Youtube className="w-6 h-6 fill-red-500" />
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                      {ch.platform === 'YOUTUBE' ? (
+                        <Youtube className="w-6 h-6 fill-red-500 text-red-500" />
+                      ) : (
+                        <Globe className="w-6 h-6 text-indigo-400" />
+                      )}
                     </div>
                     <div>
                       <h2 className="font-black text-base text-white">{ch.name}</h2>
-                      <p className="text-[11px] text-slate-400">Platform: {ch.platform}</p>
+                      <p className="text-[11px] text-slate-400 font-mono">
+                        {ch.platform} • {ch.platformChannelId}
+                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                      Connected
+                      Active
                     </span>
                     <button
                       onClick={() => handleDeleteChannel(ch.id)}
@@ -170,21 +198,21 @@ export default function ChannelsStudioPage() {
                   </div>
                 </div>
 
-                {/* Defaults */}
+                {/* Configuration Specs */}
                 <div className="space-y-3 text-xs">
-                  <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5 space-y-1">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-indigo-400" /> Default Privacy & License
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5 flex items-center justify-between">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
+                      <Key className="w-3.5 h-3.5 text-cyan-400" /> Encrypted Tokens
                     </div>
-                    <div className="font-bold text-slate-200">Public | Standard Channel License</div>
+                    <div className="font-bold text-emerald-400 text-[11px]">AES-256 Secured in DB</div>
                   </div>
 
                   <div className="p-3 rounded-xl bg-slate-900/60 border border-white/5 space-y-1">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                      <Tag className="w-3 h-3 text-cyan-400" /> SEO Tags Default
+                    <div className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-indigo-400" /> Auto-Publish Schedule
                     </div>
-                    <div className="font-bold text-slate-200 font-mono text-[11px]">
-                      #tech #ai #automation #shorts
+                    <div className="font-bold text-slate-200">
+                      Twice Daily • Auto-Pilot Active
                     </div>
                   </div>
                 </div>
@@ -192,30 +220,30 @@ export default function ChannelsStudioPage() {
             ))
           ) : (
             <div className="glass-panel p-8 rounded-3xl border border-white/10 md:col-span-2 text-center space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-400 mx-auto">
-                <Youtube className="w-6 h-6 fill-red-500" />
+              <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mx-auto">
+                <Tv className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">No Connected Channels Found</h3>
+                <h3 className="text-base font-bold text-white">No Channels Added Yet</h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto mt-1">
-                  Connect your YouTube channel or social media account to enable automatic background video uploads.
+                  Add custom social media channels with your API Keys or OAuth Client Credentials directly inside the app.
                 </p>
               </div>
 
               <div className="flex items-center justify-center gap-3 pt-2">
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs border border-white/10 flex items-center gap-2 transition-all"
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  <span>Add Channel Manually</span>
+                  <span>Add Channel & Keys</span>
                 </button>
 
                 <button
-                  onClick={handleConnectYouTube}
-                  className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs shadow-lg shadow-red-500/30 inline-flex items-center gap-2 transition-all"
+                  onClick={() => setShowOAuthModal(true)}
+                  className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs border border-white/10 inline-flex items-center gap-2 transition-all"
                 >
-                  <Youtube className="w-4 h-4 fill-white" />
+                  <Youtube className="w-4 h-4 fill-red-500 text-red-500" />
                   <span>Connect YouTube OAuth</span>
                 </button>
               </div>
@@ -225,11 +253,11 @@ export default function ChannelsStudioPage() {
 
         {/* Add Channel Modal */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-6 space-y-6 shadow-2xl animate-in zoom-in-95">
+          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-xl bg-slate-900 border border-white/10 rounded-3xl p-6 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <h2 className="text-base font-black text-white flex items-center gap-2">
-                  <Tv className="w-5 h-5 text-indigo-400" /> Add New Social Channel
+                  <Tv className="w-5 h-5 text-indigo-400" /> Add Dynamic Social Channel & Credentials
                 </h2>
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -240,36 +268,38 @@ export default function ChannelsStudioPage() {
               </div>
 
               <form onSubmit={handleAddManualChannel} className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-300 mb-1">Channel Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. TechPulse AI Official"
-                    value={newChannelName}
-                    onChange={(e) => setNewChannelName(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-300 mb-1">Channel Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. TechPulse AI Studio"
+                      value={newChannelName}
+                      onChange={(e) => setNewChannelName(e.target.value)}
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-300 mb-1">Platform *</label>
+                    <select
+                      value={newPlatform}
+                      onChange={(e) => setNewPlatform(e.target.value)}
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    >
+                      <option value="YOUTUBE">YouTube Channel</option>
+                      <option value="TIKTOK">TikTok Account</option>
+                      <option value="INSTAGRAM">Instagram Reels</option>
+                      <option value="TWITTER">X / Twitter</option>
+                      <option value="LINKEDIN">LinkedIn Page</option>
+                      <option value="FACEBOOK">Facebook Page</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Platform</label>
-                  <select
-                    value={newPlatform}
-                    onChange={(e) => setNewPlatform(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="YOUTUBE">YouTube Channel</option>
-                    <option value="TIKTOK">TikTok Account</option>
-                    <option value="INSTAGRAM">Instagram Reels Account</option>
-                    <option value="TWITTER">X / Twitter Account</option>
-                    <option value="LINKEDIN">LinkedIn Page</option>
-                    <option value="FACEBOOK">Facebook Page</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-300 mb-1">Platform Channel ID / Handle (Optional)</label>
+                  <label className="block font-bold text-slate-300 mb-1">Platform Channel ID / Handle</label>
                   <input
                     type="text"
                     placeholder="e.g. @techpulseai or UC..."
@@ -277,6 +307,58 @@ export default function ChannelsStudioPage() {
                     onChange={(e) => setPlatformChannelId(e.target.value)}
                     className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
                   />
+                </div>
+
+                <div className="pt-2 border-t border-white/10 space-y-3">
+                  <div className="text-[11px] font-extrabold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Key className="w-3.5 h-3.5" /> Direct Access Tokens & Keys (Stored AES-256 Encrypted in DB)
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-300 mb-1">Access Token / API Key (Optional)</label>
+                    <input
+                      type="password"
+                      placeholder="Paste your platform Access Token or API Key..."
+                      value={accessToken}
+                      onChange={(e) => setAccessToken(e.target.value)}
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-300 mb-1">Refresh Token (Optional)</label>
+                    <input
+                      type="password"
+                      placeholder="Paste your OAuth Refresh Token..."
+                      value={refreshToken}
+                      onChange={(e) => setRefreshToken(e.target.value)}
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1">OAuth Client ID (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="Google/TikTok App Client ID..."
+                        value={clientId}
+                        onChange={(e) => setClientId(e.target.value)}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-300 mb-1">OAuth Client Secret (Optional)</label>
+                      <input
+                        type="password"
+                        placeholder="App Client Secret..."
+                        value={clientSecret}
+                        onChange={(e) => setClientSecret(e.target.value)}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-white/10 flex justify-end gap-3">
@@ -293,10 +375,64 @@ export default function ChannelsStudioPage() {
                     disabled={creating}
                     className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold shadow-lg shadow-indigo-500/20"
                   >
-                    {creating ? 'Saving...' : 'Add Channel'}
+                    {creating ? 'Saving...' : 'Add Channel & Save Credentials'}
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* YouTube OAuth Connection Modal */}
+        {showOAuthModal && (
+          <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-slate-900 border border-white/10 rounded-3xl p-6 space-y-5 shadow-2xl animate-in zoom-in-95">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <h2 className="text-base font-black text-white flex items-center gap-2">
+                  <Youtube className="w-5 h-5 fill-red-500 text-red-500" /> Connect YouTube via OAuth
+                </h2>
+                <button
+                  onClick={() => setShowOAuthModal(false)}
+                  className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Click below to authorize your YouTube channel via Google OAuth. You can optionally enter your custom Google Client ID below:
+              </p>
+
+              <div>
+                <label className="block font-bold text-slate-300 text-xs mb-1">Custom Google Client ID (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 123456789-abc...apps.googleusercontent.com"
+                  value={oauthClientId}
+                  onChange={(e) => setOauthClientId(e.target.value)}
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-white/10 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowOAuthModal(false)}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 font-bold hover:bg-slate-700 text-xs"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleConnectYouTube}
+                  disabled={connecting}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:opacity-90 text-white font-extrabold text-xs shadow-lg shadow-red-500/20 flex items-center gap-2"
+                >
+                  {connecting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  <span>Start OAuth Authorization</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
