@@ -9,6 +9,7 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
+    "rootDir": "./src",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
@@ -18,7 +19,9 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@acf/shared": ["../../packages/shared/src"]
+      "@acf/shared": ["../../packages/shared/dist"]
     }
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "prisma"]
 }
