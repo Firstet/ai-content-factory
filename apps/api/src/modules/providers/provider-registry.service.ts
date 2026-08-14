@@ -81,7 +81,14 @@ export class ProviderRegistry {
           });
         } catch (e) {
           this.logger.warn(`Failed to decrypt API key for ${dbProvider.name}: ${e}`);
-          continue;
+        }
+      }
+
+      // Environment variable fallback if not set in DB
+      if (!opts.apiKey) {
+        const envKey = process.env[`${dbProvider.name}_API_KEY`];
+        if (envKey) {
+          opts.apiKey = envKey;
         }
       }
 

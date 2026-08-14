@@ -49,9 +49,17 @@ export class ChannelsService {
 
   async getDecryptedTokens(id: string) {
     const channel = await this.prisma.channel.findUniqueOrThrow({ where: { id } });
+    const accessToken = channel.accessToken
+      ? this.crypto.decrypt(channel.accessToken)
+      : process.env[`${channel.platform}_ACCESS_TOKEN`] || process.env[`${channel.platform}_CLIENT_SECRET`];
+
+    const refreshToken = channel.refreshToken
+      ? this.crypto.decrypt(channel.refreshToken)
+      : process.env[`${channel.platform}_REFRESH_TOKEN`];
+
     return {
-      accessToken: channel.accessToken ? this.crypto.decrypt(channel.accessToken) : null,
-      refreshToken: channel.refreshToken ? this.crypto.decrypt(channel.refreshToken) : null,
+      accessToken: accessToken || null,
+      refreshToken: refreshToken || null,
     };
   }
 
