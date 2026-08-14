@@ -30,13 +30,13 @@ export class ChannelsController {
   ) {
     const webUrl = process.env.APP_URL || 'http://localhost:3002';
     if (error || !code) {
-      return res.redirect(`${webUrl}/admin/channels?error=${encodeURIComponent(error || 'No authorization code provided')}`);
+      return res.redirect(`${webUrl}/channels?error=${encodeURIComponent(error || 'No authorization code provided')}`);
     }
     try {
       await this.service.handleYouTubeOAuthCallback(code);
-      return res.redirect(`${webUrl}/admin/channels?status=connected&platform=YOUTUBE`);
+      return res.redirect(`${webUrl}/channels?status=connected&platform=YOUTUBE`);
     } catch (err: any) {
-      return res.redirect(`${webUrl}/admin/channels?error=${encodeURIComponent(err.message || 'OAuth authentication failed')}`);
+      return res.redirect(`${webUrl}/channels?error=${encodeURIComponent(err.message || 'OAuth authentication failed')}`);
     }
   }
 

@@ -25,8 +25,31 @@ export class ChannelsService {
     return this.prisma.channel.findUniqueOrThrow({ where: { id } });
   }
 
-  create(data: { brandId: string; platform: string; name: string; platformChannelId?: string }) {
-    return this.prisma.channel.create({ data: data as any });
+  async create(data: { brandId?: string; platform: string; name: string; platformChannelId?: string }) {
+    let brandId = data.brandId;
+    if (!brandId) {
+      let brand = await this.prisma.brand.findFirst();
+      if (!brand) {
+        brand = await this.prisma.brand.create({
+          data: {
+            name: 'Primary Studio Brand',
+            niche: 'AI Tools & Tech Automation',
+            autoPilotEnabled: true,
+            scheduleFrequency: 'TWICE_DAILY',
+          },
+        });
+      }
+      brandId = brand.id;
+    }
+    return this.prisma.channel.create({
+      data: {
+        brandId,
+        platform: (data.platform || 'YOUTUBE').toUpperCase(),
+        name: data.name,
+        platformChannelId: data.platformChannelId || `ch_${Date.now()}`,
+        isConnected: true,
+      },
+    });
   }
 
   update(id: string, data: object) {
@@ -114,10 +137,17 @@ export class ChannelsService {
       // Fallback
     }
 
-    // Get default brand or first brand
-    const brand = await this.prisma.brand.findFirst();
+    // Get default brand or auto-create one
+    let brand = await this.prisma.brand.findFirst();
     if (!brand) {
-      throw new Error('No brand found to attach YouTube channel to');
+      brand = await this.prisma.brand.create({
+        data: {
+          name: 'Primary Studio Brand',
+          niche: 'AI Tools & Tech Automation',
+          autoPilotEnabled: true,
+          scheduleFrequency: 'TWICE_DAILY',
+        },
+      });
     }
 
     // Find existing channel or create new one
