@@ -17,7 +17,7 @@ import {
   HardDrive,
   Terminal,
   CreditCard,
-  Settings,
+  Zap,
   Sparkles,
   PlusCircle,
   Video,
@@ -25,25 +25,21 @@ import {
 
 const mainNav = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Auto-Pilot Scheduler', href: '/admin/automation', icon: Zap, badge: 'Auto' },
   { name: 'Create Content', href: '/content/new', icon: PlusCircle, badge: 'New' },
-  { name: 'Videos', href: '/videos', icon: Video },
+  { name: 'Videos Vault', href: '/videos', icon: Video },
 ];
 
 const adminNav = [
-  { name: 'Users', href: '/admin/users', icon: Users },
-  { name: 'Roles & Permissions', href: '/admin/roles', icon: ShieldCheck },
-  { name: 'Brands', href: '/admin/brands', icon: Building2 },
-  { name: 'Channels', href: '/admin/channels', icon: Tv },
-  { name: 'Prompt Library', href: '/admin/prompts', icon: FileCode2 },
-  { name: 'AI Providers', href: '/admin/providers', icon: Cpu },
   { name: 'API Key Vault', href: '/admin/api-keys', icon: KeyRound },
-  { name: 'Queues & Jobs', href: '/admin/queues', icon: ListTodo },
-  { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
-  { name: 'Publishing', href: '/admin/publishing', icon: Share2 },
-  { name: 'Storage', href: '/admin/storage', icon: HardDrive },
-  { name: 'System Logs', href: '/admin/logs', icon: Terminal },
-  { name: 'Billing Ready', href: '/admin/billing', icon: CreditCard },
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
+  { name: 'Brand & Watermarks', href: '/admin/brands', icon: Building2 },
+  { name: 'Social Channels', href: '/admin/channels', icon: Tv },
+  { name: 'Analytics & SEO', href: '/admin/analytics', icon: BarChart3 },
+  { name: 'Queues & Engine', href: '/admin/queues', icon: ListTodo },
+  { name: 'AI Providers', href: '/admin/providers', icon: Cpu },
+  { name: 'Prompt Library', href: '/admin/prompts', icon: FileCode2 },
+  { name: 'Users & Security', href: '/admin/users', icon: Users },
+  { name: 'System Settings', href: '/admin/settings', icon: Settings },
 ];
 
 export function Sidebar() {

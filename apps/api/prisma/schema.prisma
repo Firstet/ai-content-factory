@@ -88,11 +88,22 @@ model Brand {
   id            String         @id @default(uuid())
   name          String
   slug          String         @unique
-  logoUrl       String?
-  voiceTone     String         @default("Professional and engaging")
-  styleGuide    String?        @db.Text
-  videoStrategy VideoStrategy  @default(FFMPEG_ASSEMBLY)
-  isActive      Boolean        @default(true)
+  logoUrl           String?
+  watermarkUrl      String?
+  watermarkPosition String         @default("bottom-right")
+  niche             String?
+  keywords          String[]       @default([])
+  voiceTone         String         @default("Professional and engaging")
+  styleGuide        String?        @db.Text
+  videoStrategy     VideoStrategy  @default(FFMPEG_ASSEMBLY)
+  isActive          Boolean        @default(true)
+
+  // Auto-Pilot Content Engine Configuration
+  autoPilotEnabled  Boolean        @default(false)
+  scheduleFrequency String         @default("TWICE_DAILY")
+  contentFormats    String[]       @default(["SHORT_VIDEO", "STILL_IMAGE", "CAROUSEL", "LONG_VIDEO"])
+  lastAutoRunAt     DateTime?
+  nextAutoRunAt     DateTime?
 
   users    User[]
   channels Channel[]

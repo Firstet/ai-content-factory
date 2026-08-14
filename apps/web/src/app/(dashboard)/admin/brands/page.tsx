@@ -55,33 +55,47 @@ export default function BrandsAdminPage() {
         {/* Create Form */}
         <div className="glass-panel p-6 rounded-2xl border border-white/10">
           <h2 className="text-xs font-bold uppercase text-slate-400 tracking-wider mb-4">Create New Brand Profile</h2>
-          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Brand Name</label>
               <input
                 type="text"
-                placeholder="Brand Name (e.g. TechPulse AI)"
+                placeholder="e.g. TechPulse AI"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
               />
             </div>
             <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Niche / Audience</label>
               <input
                 type="text"
-                placeholder="Voice & Tone (e.g. Energetic & Educational)"
-                value={voiceTone}
-                onChange={(e) => setVoiceTone(e.target.value)}
-                className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+                placeholder="e.g. AI Tools & Tech Automation"
+                value={niche}
+                onChange={(e) => setNiche(e.target.value)}
+                className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
               />
             </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="py-2 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create Brand</span>
-            </button>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Logo / Watermark URL</label>
+              <input
+                type="text"
+                placeholder="https://brand.com/logo.png"
+                value={watermarkUrl}
+                onChange={(e) => setWatermarkUrl(e.target.value)}
+                className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create Brand Profile</span>
+              </button>
+            </div>
           </form>
         </div>
 
