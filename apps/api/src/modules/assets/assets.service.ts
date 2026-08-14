@@ -3,18 +3,26 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as Minio from 'minio';
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class AssetsService {
   private readonly logger = new Logger(AssetsService.name);
   private readonly minioClient: Minio.Client;
   private readonly bucket: string;
+  private readonly uploadDir: string;
 
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
   ) {
     this.bucket = this.config.get('MINIO_BUCKET') || 'acf-assets';
+    this.uploadDir = path.join(process.cwd(), 'uploads');
+    if (!fs.existsSync(this.uploadDir)) {
+      fs.mkdirSync(this.uploadDir, { recursive: true });
+    }
+
     this.minioClient = new Minio.Client({
       endPoint: this.config.get('MINIO_ENDPOINT') || 'minio',
       port: parseInt(this.config.get('MINIO_PORT') || '9000'),
@@ -25,7 +33,7 @@ export class AssetsService {
   }
 
   /**
-   * Upload a Buffer to MinIO and return the object URL.
+   * Upload a Buffer to MinIO or fallback to local disk storage.
    */
   async uploadBuffer(
     buffer: Buffer,
@@ -34,13 +42,22 @@ export class AssetsService {
     videoId?: string,
     isPublic = true,
   ): Promise<{ url: string; key: string }> {
-    const key = `${videoId ? `videos/${videoId}/` : 'general/'}${uuidv4()}-${fileName}`;
-    
-    await this.minioClient.putObject(this.bucket, key, buffer, buffer.length, {
-      'Content-Type': mimeType,
-    });
+    const safeName = `${uuidv4()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const key = `${videoId ? `videos/${videoId}/` : 'general/'}${safeName}`;
+    let url = '';
 
-    const url = await this.getPublicUrl(key);
+    try {
+      await this.minioClient.putObject(this.bucket, key, buffer, buffer.length, {
+        'Content-Type': mimeType,
+      });
+      url = await this.getPublicUrl(key);
+    } catch (err: any) {
+      this.logger.warn(`MinIO upload failed (${err.message}). Saving to local disk storage.`);
+      const localFilePath = path.join(this.uploadDir, safeName);
+      fs.writeFileSync(localFilePath, buffer);
+      const appUrl = this.config.get('APP_URL') || 'http://localhost:3001';
+      url = `${appUrl}/uploads/${safeName}`;
+    }
 
     await this.prisma.asset.create({
       data: {
@@ -54,21 +71,26 @@ export class AssetsService {
       },
     });
 
-    this.logger.debug(`Uploaded asset: ${key}`);
+    this.logger.debug(`Uploaded asset: ${url}`);
     return { url, key };
   }
 
   async getPublicUrl(key: string): Promise<string> {
-    // Return a presigned URL valid for 7 days, or a public URL if bucket is public
-    const endpoint = this.config.get('MINIO_ENDPOINT');
+    const endpoint = this.config.get('MINIO_ENDPOINT') || 'localhost';
     const port = this.config.get('MINIO_PORT') || '9000';
     return `http://${endpoint}:${port}/${this.bucket}/${key}`;
   }
 
   async getPresignedUploadUrl(fileName: string, mimeType: string): Promise<{ uploadUrl: string; key: string }> {
-    const key = `uploads/${uuidv4()}-${fileName}`;
-    const uploadUrl = await this.minioClient.presignedPutObject(this.bucket, key, 3600);
-    return { uploadUrl, key };
+    const safeName = `${uuidv4()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const key = `uploads/${safeName}`;
+    try {
+      const uploadUrl = await this.minioClient.presignedPutObject(this.bucket, key, 3600);
+      return { uploadUrl, key };
+    } catch (e) {
+      const appUrl = this.config.get('APP_URL') || 'http://localhost:3001';
+      return { uploadUrl: `${appUrl}/api/assets/upload`, key };
+    }
   }
 
   findAll(videoId?: string) {
@@ -80,7 +102,11 @@ export class AssetsService {
 
   async delete(id: string) {
     const asset = await this.prisma.asset.findUniqueOrThrow({ where: { id } });
-    await this.minioClient.removeObject(this.bucket, asset.key);
+    try {
+      await this.minioClient.removeObject(this.bucket, asset.key);
+    } catch (e) {
+      // Ignore minio delete error for local files
+    }
     return this.prisma.asset.delete({ where: { id } });
   }
 

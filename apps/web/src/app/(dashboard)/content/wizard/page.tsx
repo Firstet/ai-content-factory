@@ -14,10 +14,10 @@ import {
   Tv,
   KeyRound,
   Clock,
-  Play,
-  Layers,
   Zap,
+  Layers,
 } from 'lucide-react';
+import { MediaUploader } from '@/components/common/MediaUploader';
 import { api } from '@/lib/api';
 
 export default function ContentWizardPage() {
@@ -34,7 +34,7 @@ export default function ContentWizardPage() {
     brandName: 'TechPulse AI',
     targetAudience: 'Software developers, tech enthusiasts, founders',
     voiceTone: 'High-energy, educational, authoritative',
-    // Step 3: Logo & Watermark
+    // Step 3: Logo & Watermark (Uploadable!)
     logoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80',
     watermarkUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80',
     watermarkPosition: 'bottom-right',
@@ -76,7 +76,6 @@ export default function ContentWizardPage() {
   const handleFinish = async () => {
     setLoading(true);
     try {
-      // 1. Create or update brand profile
       const bRes = await api.post('/brands', {
         name: formData.brandName,
         voiceTone: formData.voiceTone,
@@ -88,7 +87,6 @@ export default function ContentWizardPage() {
         scheduleFrequency: 'TWICE_DAILY',
       });
 
-      // 2. Start initial automation run
       await api.post('/pipeline/start', {
         topic: `Top 5 ${formData.niche} Trends for 2026`,
         brandId: bRes.data?.id,
@@ -119,7 +117,7 @@ export default function ContentWizardPage() {
             Create Autonomous Content Plan
           </h1>
           <p className="text-xs text-slate-400">
-            Follow the 9 steps below to configure your automated YouTube Studio & social content pipeline.
+            Configure your brand identity, media watermarks, and posting schedule in 9 simple steps.
           </p>
         </div>
 
@@ -241,37 +239,37 @@ export default function ContentWizardPage() {
             </div>
           )}
 
-          {/* STEP 3: LOGO & WATERMARK */}
+          {/* STEP 3: UPLOAD LOGO & WATERMARK (UPLOADABLE!) */}
           {currentStep === 3 && (
             <div className="space-y-6 animate-in fade-in">
               <div>
-                <h2 className="text-lg font-black text-white">Step 3: Brand Logo & Watermark Overlay</h2>
-                <p className="text-xs text-slate-400 mt-1">Provide logo URLs to automatically overlay on rendered videos.</p>
+                <h2 className="text-lg font-black text-white">Step 3: Upload Brand Logo & Watermark</h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Upload your logo and watermark overlay files to automatically embed on rendered videos.
+                </p>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-300 mb-1">Brand Logo URL</label>
-                  <input
-                    type="text"
-                    value={formData.logoUrl}
-                    onChange={(e) => setFormData({ ...formData, logoUrl: e.target.value })}
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <MediaUploader
+                  label="Brand Logo Image"
+                  accept="image/*"
+                  value={formData.logoUrl}
+                  onChange={(url) => setFormData({ ...formData, logoUrl: url })}
+                  helperText="Upload PNG, JPG, or SVG logo"
+                />
 
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-300 mb-1">Watermark Overlay URL</label>
-                  <input
-                    type="text"
-                    value={formData.watermarkUrl}
-                    onChange={(e) => setFormData({ ...formData, watermarkUrl: e.target.value })}
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
+                <MediaUploader
+                  label="Watermark Overlay Image"
+                  accept="image/*"
+                  value={formData.watermarkUrl}
+                  onChange={(url) => setFormData({ ...formData, watermarkUrl: url })}
+                  helperText="Upload transparent PNG watermark"
+                />
 
-                <div>
-                  <label className="block text-xs font-bold uppercase text-slate-300 mb-1">Watermark Screen Position</label>
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold uppercase text-slate-300 mb-1">
+                    Watermark Screen Position
+                  </label>
                   <select
                     value={formData.watermarkPosition}
                     onChange={(e) => setFormData({ ...formData, watermarkPosition: e.target.value })}

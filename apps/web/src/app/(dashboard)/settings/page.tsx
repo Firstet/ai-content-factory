@@ -13,10 +13,10 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  Plus,
   ShieldCheck,
   Zap,
 } from 'lucide-react';
+import { MediaUploader } from '@/components/common/MediaUploader';
 import { api } from '@/lib/api';
 
 export default function CreatorSettingsPage() {
@@ -32,7 +32,7 @@ export default function CreatorSettingsPage() {
   const [savingKey, setSavingKey] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Branding State
+  // Branding State (Uploadable!)
   const [logoUrl, setLogoUrl] = useState('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80');
   const [watermarkUrl, setWatermarkUrl] = useState('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80');
   const [watermarkPosition, setWatermarkPosition] = useState('bottom-right');
@@ -48,7 +48,6 @@ export default function CreatorSettingsPage() {
   const [scriptModel, setScriptModel] = useState('GPT-4o Mini / Gemini Pro');
   const [voiceEngine, setVoiceEngine] = useState('Piper TTS (Local Server - Free)');
   const [captionEngine, setCaptionEngine] = useState('Whisper (Local Server - Free)');
-  const [renderEngine, setRenderEngine] = useState('FFmpeg Hardware Accelerated (Free)');
 
   useEffect(() => {
     loadKeyVault();
@@ -99,7 +98,7 @@ export default function CreatorSettingsPage() {
               Settings & Cost Optimizer
             </h1>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Manage brand assets, API key vault, publishing rules, and AI cost optimization preferences.
+              Manage brand assets, upload watermarks, configure API keys, and set AI cost routing rules.
             </p>
           </div>
         </div>
@@ -140,36 +139,32 @@ export default function CreatorSettingsPage() {
           </div>
         )}
 
-        {/* TAB 1: BRANDING & WATERMARKS */}
+        {/* TAB 1: BRANDING & WATERMARKS (UPLOADABLE!) */}
         {activeTab === 'BRANDING' && (
           <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
             <div className="border-b border-white/10 pb-4">
               <h2 className="text-base font-black text-white">Brand Logo & Video Watermark Overlay</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Define your logo and watermark positions for video renders.</p>
+              <p className="text-xs text-slate-400 mt-0.5">Upload logo and watermark overlay files for video renders.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">Brand Logo Image URL</label>
-                <input
-                  type="text"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
-              </div>
+              <MediaUploader
+                label="Brand Logo Image"
+                accept="image/*"
+                value={logoUrl}
+                onChange={(url) => setLogoUrl(url)}
+                helperText="Upload PNG, JPG, or SVG logo"
+              />
 
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">Watermark Overlay URL</label>
-                <input
-                  type="text"
-                  value={watermarkUrl}
-                  onChange={(e) => setWatermarkUrl(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                />
-              </div>
+              <MediaUploader
+                label="Watermark Overlay Image"
+                accept="image/*"
+                value={watermarkUrl}
+                onChange={(url) => setWatermarkUrl(url)}
+                helperText="Upload transparent PNG watermark"
+              />
 
-              <div>
+              <div className="md:col-span-2">
                 <label className="block font-bold text-slate-300 mb-1">Watermark Overlay Position</label>
                 <select
                   value={watermarkPosition}
@@ -189,7 +184,6 @@ export default function CreatorSettingsPage() {
         {/* TAB 2: API KEY VAULT */}
         {activeTab === 'API_KEYS' && (
           <div className="space-y-6">
-            {/* Save Key Form */}
             <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-4 shadow-2xl">
               <div className="flex items-center gap-2 border-b border-white/10 pb-4">
                 <ShieldCheck className="w-5 h-5 text-indigo-400" />
@@ -254,7 +248,6 @@ export default function CreatorSettingsPage() {
               </form>
             </div>
 
-            {/* Configured Keys Table */}
             <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
               <div className="p-4 bg-slate-950/80 border-b border-white/10 text-xs font-bold text-slate-300 uppercase tracking-wider">
                 Encrypted Keys Stored ({keys.length})
