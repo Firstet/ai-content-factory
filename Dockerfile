@@ -1,13 +1,11 @@
 # ─────────────────────────────────────────────────────────────────
-# Dockerfile.api — NestJS API
-# Multi-stage build for production
+# Dockerfile — Root Dockerfile for Dokploy Single Application Deployment
 # ─────────────────────────────────────────────────────────────────
 
 FROM node:22-alpine AS builder
 RUN npm install -g pnpm@9.15.4
 WORKDIR /app
 
-# Copy workspace manifests
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* .npmrc ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/package.json ./apps/api/
@@ -17,38 +15,33 @@ COPY workers/package.json ./workers/
 RUN pnpm install --no-frozen-lockfile
 
 COPY packages/shared ./packages/shared
-COPY apps/api ./apps/api
+COPY apps/web ./apps/web
 COPY tsconfig.json ./
 
-# Build shared package first
 RUN pnpm --filter shared build
 
-# Generate Prisma client
-RUN cd apps/api && npx prisma generate
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm --filter web build
 
-# Build NestJS
-RUN pnpm --filter api build
-
-# Stage 2: Production Runner
 FROM node:22-alpine AS runner
-RUN npm install -g pnpm@9.15.4
-
-# Install ffmpeg for video processing
-RUN apk add --no-cache ffmpeg curl
-
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
 
-# Copy built app and node_modules
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-EXPOSE 3001
+COPY --from=builder /app/apps/web/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:3001/api/health || exit 1
+USER nextjs
 
-CMD ["sh", "-c", "cd apps/api && (npx prisma migrate deploy || true) && node dist/main.js"]
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/', r => process.exit(r.statusCode === 200 || r.statusCode === 307 || r.statusCode === 302 ? 0 : 1)).on('error', () => process.exit(1))" || exit 1
+
+CMD ["node", "apps/web/server.js"]
