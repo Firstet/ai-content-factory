@@ -15,63 +15,62 @@ import {
   EyeOff,
   ShieldCheck,
   Sparkles,
+  Globe,
   Bot,
-  Layers,
-  Plus,
   Trash2,
 } from 'lucide-react';
 import { MediaUploader } from '@/components/common/MediaUploader';
 import { api } from '@/lib/api';
 
 const DEFAULT_PROVIDERS = [
-  { name: 'OPENAI', displayName: 'OpenAI (GPT-4o / DALL-E 3)', placeholder: 'sk-proj-...' },
-  { name: 'GEMINI', displayName: 'Google Gemini (Free Tier Available)', placeholder: 'AIzaSy...' },
-  { name: 'ANTHROPIC', displayName: 'Anthropic Claude', placeholder: 'sk-ant-...' },
-  { name: 'OPENROUTER', displayName: 'OpenRouter (Free & Open Models)', placeholder: 'sk-or-...' },
-  { name: 'ELEVENLABS', displayName: 'ElevenLabs Voice AI', placeholder: 'el-...' },
+  { name: 'OPENAI', displayName: 'OpenAI (Official GPT-4o)', placeholder: 'sk-proj-...', defaultBaseUrl: 'https://api.openai.com/v1' },
+  { name: 'OPENAI_COMPATIBLE', displayName: 'OpenAI Compatible (DeepSeek, Groq, Anyscale, LM Studio)', placeholder: 'sk-...', defaultBaseUrl: 'https://api.deepseek.com/v1' },
+  { name: 'GEMINI', displayName: 'Google Gemini (Free Tier Available)', placeholder: 'AIzaSy...', defaultBaseUrl: 'https://generativelanguage.googleapis.com' },
+  { name: 'ANTHROPIC', displayName: 'Anthropic Claude 3.5', placeholder: 'sk-ant-...', defaultBaseUrl: 'https://api.anthropic.com' },
+  { name: 'OPENROUTER', displayName: 'OpenRouter (Access 100+ Free Models)', placeholder: 'sk-or-...', defaultBaseUrl: 'https://openrouter.ai/api/v1' },
+  { name: 'ELEVENLABS', displayName: 'ElevenLabs Voice AI', placeholder: 'el-...', defaultBaseUrl: 'https://api.elevenlabs.io' },
 ];
 
 export default function CreatorSettingsPage() {
-  const [activeTab, setActiveTab] = useState<'AI_ENGINES' | 'API_KEYS' | 'BRANDING' | 'PUBLISHING' | 'NOTIFICATIONS'>('API_KEYS');
+  const [activeTab, setActiveTab] = useState<'API_KEYS' | 'AI_ENGINES' | 'BRANDING' | 'PUBLISHING' | 'NOTIFICATIONS'>('API_KEYS');
 
   // API Key Vault State
   const [keys, setKeys] = useState<any[]>([]);
-  const [providers, setProviders] = useState<any[]>([]);
-  const [selectedProviderName, setSelectedProviderName] = useState('OPENAI');
-  const [label, setLabel] = useState('Primary API Key');
+  const [selectedProviderName, setSelectedProviderName] = useState('OPENAI_COMPATIBLE');
+  const [label, setLabel] = useState('DeepSeek / OpenAI Compatible Key');
   const [keyInput, setKeyInput] = useState('');
+  const [baseUrlInput, setBaseUrlInput] = useState('https://api.deepseek.com/v1');
   const [showKey, setShowKey] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Preferred AI Engine Selection (Zero-Cost & Custom Provider Options)
-  const [researchProvider, setResearchProvider] = useState('GEMINI');
-  const [scriptProvider, setScriptProvider] = useState('OPENAI');
+  // Preferred AI Engine Selection
+  const [researchProvider, setResearchProvider] = useState('OPENAI_COMPATIBLE');
+  const [scriptProvider, setScriptProvider] = useState('OPENAI_COMPATIBLE');
+  const [customModelName, setCustomModelName] = useState('deepseek-chat');
   const [voiceEngine, setVoiceEngine] = useState('PIPER_LOCAL');
-  const [captionEngine, setCaptionEngine] = useState('WHISPER_LOCAL');
   const [imageEngine, setImageEngine] = useState('POLLINATIONS_FREE');
 
-  // Branding State
+  // Branding & Publishing State
   const [logoUrl, setLogoUrl] = useState('');
   const [watermarkUrl, setWatermarkUrl] = useState('');
-  const [watermarkPosition, setWatermarkPosition] = useState('bottom-right');
-  const [brandNiche, setBrandNiche] = useState('AI Tools & Tech Automation');
-
-  // Publishing State
   const [autoPublish, setAutoPublish] = useState(true);
 
   useEffect(() => {
     loadKeyVault();
   }, []);
 
+  useEffect(() => {
+    const p = DEFAULT_PROVIDERS.find((item) => item.name === selectedProviderName);
+    if (p) {
+      setBaseUrlInput(p.defaultBaseUrl);
+    }
+  }, [selectedProviderName]);
+
   const loadKeyVault = async () => {
     try {
-      const [kRes, pRes] = await Promise.all([
-        api.get('/api-keys').catch(() => ({ data: [] })),
-        api.get('/providers').catch(() => ({ data: [] })),
-      ]);
+      const kRes = await api.get('/api-keys').catch(() => ({ data: [] }));
       setKeys(kRes.data || []);
-      setProviders(pRes.data || []);
     } catch (err) {
       console.error(err);
     }
@@ -86,6 +85,7 @@ export default function CreatorSettingsPage() {
         providerId: selectedProviderName,
         label: label || `${selectedProviderName} Key`,
         key: keyInput,
+        platform: baseUrlInput, // Stores custom base URL
       });
 
       setKeyInput('');
@@ -125,10 +125,10 @@ export default function CreatorSettingsPage() {
               </span>
             </div>
             <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              AI Provider Keys & Configuration
+              AI Provider Keys & OpenAI Compatible APIs
             </h1>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Add your AI provider API keys (OpenAI, Gemini, Anthropic, OpenRouter) and select zero-cost models for video creation.
+              Connect OpenAI, DeepSeek, Groq, OpenRouter, Google Gemini, or any custom OpenAI-compatible API endpoint.
             </p>
           </div>
         </div>
@@ -176,16 +176,16 @@ export default function CreatorSettingsPage() {
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                  <h2 className="text-base font-black text-white">Add AI Provider API Key</h2>
+                  <h2 className="text-base font-black text-white">Add AI Provider or OpenAI-Compatible Key</h2>
                 </div>
-                <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  AES-256 Encrypted
+                <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  OpenAI API Compatible
                 </span>
               </div>
 
-              <form onSubmit={handleSaveKey} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <form onSubmit={handleSaveKey} className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">Select AI Provider</label>
+                  <label className="block font-bold text-slate-300 mb-1">Select AI Provider Type</label>
                   <select
                     value={selectedProviderName}
                     onChange={(e) => setSelectedProviderName(e.target.value)}
@@ -201,11 +201,26 @@ export default function CreatorSettingsPage() {
                   <label className="block font-bold text-slate-300 mb-1">Key Label</label>
                   <input
                     type="text"
-                    placeholder="e.g. My Personal OpenAI Key"
+                    placeholder="e.g. DeepSeek Production Key / Groq Key"
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-300 mb-1 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                    API Base URL (For DeepSeek, Groq, LM Studio, Custom API)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. https://api.deepseek.com/v1"
+                    value={baseUrlInput}
+                    onChange={(e) => setBaseUrlInput(e.target.value)}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">DeepSeek: https://api.deepseek.com/v1 | Groq: https://api.groq.com/openai/v1</p>
                 </div>
 
                 <div>
@@ -228,7 +243,7 @@ export default function CreatorSettingsPage() {
                   </div>
                 </div>
 
-                <div className="md:col-span-3 flex justify-end pt-2">
+                <div className="md:col-span-2 flex justify-end pt-2">
                   <button
                     type="submit"
                     disabled={savingKey || !keyInput}
@@ -245,12 +260,12 @@ export default function CreatorSettingsPage() {
             <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
               <div className="p-4 bg-slate-950/80 border-b border-white/10 flex items-center justify-between text-xs font-bold text-slate-300 uppercase tracking-wider">
                 <span>Configured AI API Keys ({keys.length})</span>
-                <span className="text-[11px] text-slate-400 font-normal lowercase">Keys are securely stored and never shown again</span>
+                <span className="text-[11px] text-slate-400 font-normal lowercase">Keys are securely stored and encrypted in PostgreSQL</span>
               </div>
               {keys.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 text-xs">
                   <KeyRound className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  No API keys added yet. Add your OpenAI, Google Gemini, or Anthropic API key above to start generating videos!
+                  No API keys added yet. Add your OpenAI, DeepSeek, Google Gemini, or Anthropic API key above!
                 </div>
               ) : (
                 <table className="w-full text-left text-xs">
@@ -258,6 +273,7 @@ export default function CreatorSettingsPage() {
                     <tr>
                       <th className="px-6 py-4 font-bold">Label</th>
                       <th className="px-6 py-4 font-bold">Provider</th>
+                      <th className="px-6 py-4 font-bold">Base URL / Endpoint</th>
                       <th className="px-6 py-4 font-bold">Status</th>
                       <th className="px-6 py-4 font-bold text-right">Actions</th>
                     </tr>
@@ -270,6 +286,9 @@ export default function CreatorSettingsPage() {
                           <span className="px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/30">
                             {k.provider?.displayName || k.provider?.name || k.providerId}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-[11px] text-slate-300">
+                          {k.platform || 'https://api.openai.com/v1'}
                         </td>
                         <td className="px-6 py-4 font-mono text-[11px] text-emerald-400 flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -299,15 +318,15 @@ export default function CreatorSettingsPage() {
             <div className="border-b border-white/10 pb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-black text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-400" /> Preferred AI Engine Selection
+                  <Sparkles className="w-5 h-5 text-amber-400" /> Preferred AI Engine & Custom Model Name
                 </h2>
                 <p className="text-xs text-slate-400 mt-1">
-                  Choose which AI model executes each pipeline step. Select free/local options to run at zero cost!
+                  Choose which AI model or provider executes each pipeline step. Works with OpenAI-compatible APIs!
                 </p>
               </div>
 
               <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Zero-Cost Options Available
+                OpenAI API Compatible
               </span>
             </div>
 
@@ -321,11 +340,11 @@ export default function CreatorSettingsPage() {
                   onChange={(e) => setResearchProvider(e.target.value)}
                   className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="GEMINI">Google Gemini 1.5 Flash (Free Tier Available)</option>
-                  <option value="OPENAI">OpenAI (GPT-4o Mini)</option>
+                  <option value="OPENAI_COMPATIBLE">OpenAI Compatible (DeepSeek / Groq / Custom API)</option>
+                  <option value="OPENAI">OpenAI Official (GPT-4o Mini)</option>
+                  <option value="GEMINI">Google Gemini 1.5 Flash (Free Tier)</option>
                   <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
                   <option value="OPENROUTER">OpenRouter (Free & Open Source Models)</option>
-                  <option value="OLLAMA">Ollama Local LLM (100% Free)</option>
                 </select>
               </div>
 
@@ -338,55 +357,39 @@ export default function CreatorSettingsPage() {
                   onChange={(e) => setScriptProvider(e.target.value)}
                   className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                 >
-                  <option value="OPENAI">OpenAI (GPT-4o / GPT-4o Mini)</option>
+                  <option value="OPENAI_COMPATIBLE">OpenAI Compatible (DeepSeek / Groq / Custom API)</option>
+                  <option value="OPENAI">OpenAI Official (GPT-4o)</option>
                   <option value="GEMINI">Google Gemini Pro (Free Tier)</option>
                   <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
                   <option value="OPENROUTER">OpenRouter Compatible APIs</option>
-                  <option value="OLLAMA">Ollama Local Llama 3 (100% Free)</option>
                 </select>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
-                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-cyan-300">
-                  3. Voice Synthesis Engine
+              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3 md:col-span-2">
+                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-amber-300">
+                  3. Custom Model Identifier (e.g. deepseek-chat, llama-3.3-70b-versatile, gpt-4o)
                 </label>
-                <select
-                  value={voiceEngine}
-                  onChange={(e) => setVoiceEngine(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="PIPER_LOCAL">Piper TTS Engine (100% Free - Server Built-In)</option>
-                  <option value="OPENAI_TTS">OpenAI Voice (tts-1)</option>
-                  <option value="ELEVENLABS">ElevenLabs AI Voice</option>
-                </select>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
-                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-emerald-300">
-                  4. B-Roll Scene Image Engine
-                </label>
-                <select
-                  value={imageEngine}
-                  onChange={(e) => setImageEngine(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="POLLINATIONS_FREE">Pollinations AI (100% Free - Unlimited Image Scenes)</option>
-                  <option value="DALL_E_3">OpenAI DALL-E 3</option>
-                  <option value="STABILITY">Stability AI SDXL</option>
-                </select>
+                <input
+                  type="text"
+                  value={customModelName}
+                  onChange={(e) => setCustomModelName(e.target.value)}
+                  placeholder="e.g. deepseek-chat or llama-3.3-70b-versatile"
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                />
+                <p className="text-[10px] text-slate-400">
+                  Specify the model ID sent to your OpenAI-compatible endpoint (e.g., DeepSeek: <code className="text-amber-300">deepseek-chat</code>, Groq: <code className="text-amber-300">llama-3.3-70b-versatile</code>).
+                </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 3: BRANDING & WATERMARKS */}
+        {/* TAB 3: BRANDING */}
         {activeTab === 'BRANDING' && (
           <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
             <div className="border-b border-white/10 pb-4">
               <h2 className="text-base font-black text-white">Brand Assets & Video Watermark Overlays</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Upload logo and transparent PNG watermarks for video rendering.</p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
               <MediaUploader
                 label="Brand Logo Image"
@@ -395,7 +398,6 @@ export default function CreatorSettingsPage() {
                 onChange={(url) => setLogoUrl(url)}
                 helperText="Upload PNG or JPG logo"
               />
-
               <MediaUploader
                 label="Watermark Overlay Image"
                 accept="image/*"

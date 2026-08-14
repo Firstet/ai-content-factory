@@ -13,7 +13,8 @@ export class ProvidersService implements OnModuleInit {
     const count = await this.prisma.provider.count();
     if (count === 0) {
       const defaultProviders = [
-        { name: 'OPENAI', displayName: 'OpenAI', enabled: true, capabilities: ['llm', 'image', 'voice'], preferredFor: ['llm'] },
+        { name: 'OPENAI', displayName: 'OpenAI (Official)', enabled: true, capabilities: ['llm', 'image', 'voice'], preferredFor: ['llm'] },
+        { name: 'OPENAI_COMPATIBLE', displayName: 'OpenAI Compatible (DeepSeek / Groq / Custom API)', enabled: true, capabilities: ['llm'], preferredFor: [] },
         { name: 'GEMINI', displayName: 'Google Gemini', enabled: true, capabilities: ['llm'], preferredFor: ['llm'] },
         { name: 'ANTHROPIC', displayName: 'Anthropic Claude', enabled: true, capabilities: ['llm'], preferredFor: ['llm'] },
         { name: 'OPENROUTER', displayName: 'OpenRouter', enabled: true, capabilities: ['llm'], preferredFor: [] },
