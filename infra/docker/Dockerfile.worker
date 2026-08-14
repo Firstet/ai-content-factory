@@ -18,9 +18,6 @@ RUN npm install -g pnpm@9.15.4
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/workers/node_modules ./workers/node_modules
-
 COPY packages/shared ./packages/shared
 COPY workers ./workers
 COPY tsconfig.json ./
@@ -37,8 +34,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
-COPY --from=deps /app/workers/node_modules ./workers/node_modules
 COPY --from=builder /app/workers/dist ./dist
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
