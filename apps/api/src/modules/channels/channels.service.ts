@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { Platform } from '@prisma/client';
 import axios from 'axios';
 
 @Injectable()
@@ -33,6 +34,7 @@ export class ChannelsService {
         brand = await this.prisma.brand.create({
           data: {
             name: 'Primary Studio Brand',
+            slug: 'primary-studio-brand',
             niche: 'AI Tools & Tech Automation',
             autoPilotEnabled: true,
             scheduleFrequency: 'TWICE_DAILY',
@@ -41,10 +43,13 @@ export class ChannelsService {
       }
       brandId = brand.id;
     }
+
+    const platformEnum = (data.platform || 'YOUTUBE').toUpperCase() as Platform;
+
     return this.prisma.channel.create({
       data: {
         brandId,
-        platform: (data.platform || 'YOUTUBE').toUpperCase(),
+        platform: platformEnum,
         name: data.name,
         platformChannelId: data.platformChannelId || `ch_${Date.now()}`,
         isConnected: true,
@@ -143,6 +148,7 @@ export class ChannelsService {
       brand = await this.prisma.brand.create({
         data: {
           name: 'Primary Studio Brand',
+          slug: 'primary-studio-brand',
           niche: 'AI Tools & Tech Automation',
           autoPilotEnabled: true,
           scheduleFrequency: 'TWICE_DAILY',
@@ -152,7 +158,7 @@ export class ChannelsService {
 
     // Find existing channel or create new one
     const existing = await this.prisma.channel.findFirst({
-      where: { brandId: brand.id, platform: 'YOUTUBE', platformChannelId },
+      where: { brandId: brand.id, platform: Platform.YOUTUBE, platformChannelId },
     });
 
     if (existing) {
@@ -161,7 +167,7 @@ export class ChannelsService {
       const newChannel = await this.prisma.channel.create({
         data: {
           brandId: brand.id,
-          platform: 'YOUTUBE',
+          platform: Platform.YOUTUBE,
           name: channelName,
           platformChannelId,
           isConnected: true,
