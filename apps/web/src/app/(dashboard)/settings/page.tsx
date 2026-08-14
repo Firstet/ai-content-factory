@@ -17,37 +17,32 @@ import {
   Sparkles,
   Bot,
   Layers,
-  Sliders,
-  Check,
+  Plus,
+  Trash2,
 } from 'lucide-react';
 import { MediaUploader } from '@/components/common/MediaUploader';
 import { api } from '@/lib/api';
 
+const DEFAULT_PROVIDERS = [
+  { name: 'OPENAI', displayName: 'OpenAI (GPT-4o / DALL-E 3)', placeholder: 'sk-proj-...' },
+  { name: 'GEMINI', displayName: 'Google Gemini (Free Tier Available)', placeholder: 'AIzaSy...' },
+  { name: 'ANTHROPIC', displayName: 'Anthropic Claude', placeholder: 'sk-ant-...' },
+  { name: 'OPENROUTER', displayName: 'OpenRouter (Free & Open Models)', placeholder: 'sk-or-...' },
+  { name: 'ELEVENLABS', displayName: 'ElevenLabs Voice AI', placeholder: 'el-...' },
+];
+
 export default function CreatorSettingsPage() {
-  const [activeTab, setActiveTab] = useState<'AI_ENGINES' | 'API_KEYS' | 'BRANDING' | 'PUBLISHING' | 'NOTIFICATIONS'>('AI_ENGINES');
+  const [activeTab, setActiveTab] = useState<'AI_ENGINES' | 'API_KEYS' | 'BRANDING' | 'PUBLISHING' | 'NOTIFICATIONS'>('API_KEYS');
 
   // API Key Vault State
   const [keys, setKeys] = useState<any[]>([]);
   const [providers, setProviders] = useState<any[]>([]);
-  const [providerId, setProviderId] = useState('');
-  const [label, setLabel] = useState('');
-  const [key, setKey] = useState('');
+  const [selectedProviderName, setSelectedProviderName] = useState('OPENAI');
+  const [label, setLabel] = useState('Primary API Key');
+  const [keyInput, setKeyInput] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
-
-  // Branding State
-  const [logoUrl, setLogoUrl] = useState('');
-  const [watermarkUrl, setWatermarkUrl] = useState('');
-  const [watermarkPosition, setWatermarkPosition] = useState('bottom-right');
-  const [brandNiche, setBrandNiche] = useState('AI Tools & Tech Automation');
-  const [voiceTone, setVoiceTone] = useState('Engaging and Informative');
-
-  // Publishing State
-  const [autoPublish, setAutoPublish] = useState(true);
-  const [autoRetry, setAutoRetry] = useState(true);
-  const [draftBeforePublish, setDraftBeforePublish] = useState(false);
-  const [randomPostingWindow, setRandomPostingWindow] = useState(true);
 
   // Preferred AI Engine Selection (Zero-Cost & Custom Provider Options)
   const [researchProvider, setResearchProvider] = useState('GEMINI');
@@ -56,16 +51,27 @@ export default function CreatorSettingsPage() {
   const [captionEngine, setCaptionEngine] = useState('WHISPER_LOCAL');
   const [imageEngine, setImageEngine] = useState('POLLINATIONS_FREE');
 
+  // Branding State
+  const [logoUrl, setLogoUrl] = useState('');
+  const [watermarkUrl, setWatermarkUrl] = useState('');
+  const [watermarkPosition, setWatermarkPosition] = useState('bottom-right');
+  const [brandNiche, setBrandNiche] = useState('AI Tools & Tech Automation');
+
+  // Publishing State
+  const [autoPublish, setAutoPublish] = useState(true);
+
   useEffect(() => {
     loadKeyVault();
   }, []);
 
   const loadKeyVault = async () => {
     try {
-      const [kRes, pRes] = await Promise.all([api.get('/api-keys'), api.get('/providers')]);
+      const [kRes, pRes] = await Promise.all([
+        api.get('/api-keys').catch(() => ({ data: [] })),
+        api.get('/providers').catch(() => ({ data: [] })),
+      ]);
       setKeys(kRes.data || []);
       setProviders(pRes.data || []);
-      if (pRes.data && pRes.data.length > 0) setProviderId(pRes.data[0].id);
     } catch (err) {
       console.error(err);
     }
@@ -73,19 +79,44 @@ export default function CreatorSettingsPage() {
 
   const handleSaveKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!key || !label || !providerId) return;
+    if (!keyInput) return;
     setSavingKey(true);
     try {
-      await api.post('/api-keys', { providerId, label, key });
-      setLabel('');
-      setKey('');
-      setSuccessMsg('API Key saved securely in Database!');
+      // Find matching provider ID or create matching entry
+      let targetProvider = providers.find((p) => p.name === selectedProviderName);
+      let providerId = targetProvider?.id;
+
+      if (!providerId) {
+        // Fallback to sending providerId directly or reloading providers
+        const pRes = await api.get('/providers');
+        targetProvider = (pRes.data || []).find((p: any) => p.name === selectedProviderName);
+        providerId = targetProvider?.id || selectedProviderName;
+      }
+
+      await api.post('/api-keys', {
+        providerId,
+        label: label || `${selectedProviderName} Key`,
+        key: keyInput,
+      });
+
+      setKeyInput('');
+      setSuccessMsg(`Successfully saved ${selectedProviderName} API key encrypted in database!`);
       setTimeout(() => setSuccessMsg(''), 4000);
       loadKeyVault();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to save API key');
+      alert(err.response?.data?.message || 'Failed to save API key. Please check connection.');
     } finally {
       setSavingKey(false);
+    }
+  };
+
+  const handleDeleteKey = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this API key?')) return;
+    try {
+      await api.delete(`/api-keys/${id}`);
+      loadKeyVault();
+    } catch (err) {
+      alert('Failed to delete key');
     }
   };
 
@@ -102,10 +133,10 @@ export default function CreatorSettingsPage() {
               </span>
             </div>
             <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              AI Engines & Studio Configuration
+              AI Provider Keys & Configuration
             </h1>
             <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Configure your preferred AI providers, API keys, brand assets, and automated YouTube publishing rules.
+              Add your AI provider API keys (OpenAI, Gemini, Anthropic, OpenRouter) and select zero-cost models for video creation.
             </p>
           </div>
         </div>
@@ -113,8 +144,8 @@ export default function CreatorSettingsPage() {
         {/* Tab Navigation */}
         <div className="glass-panel p-1.5 rounded-2xl border border-white/10 flex flex-wrap gap-1 bg-slate-950/80">
           {[
+            { id: 'API_KEYS', label: 'API Key Vault (Add Keys)', icon: KeyRound },
             { id: 'AI_ENGINES', label: 'AI Model Selection', icon: Cpu },
-            { id: 'API_KEYS', label: 'API Key Vault', icon: KeyRound },
             { id: 'BRANDING', label: 'Branding & Overlays', icon: Building2 },
             { id: 'PUBLISHING', label: 'Publishing & Automation', icon: Clock },
             { id: 'NOTIFICATIONS', label: 'Notifications', icon: Bell },
@@ -146,115 +177,30 @@ export default function CreatorSettingsPage() {
           </div>
         )}
 
-        {/* TAB 1: AI MODEL SELECTION */}
-        {activeTab === 'AI_ENGINES' && (
-          <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
-            <div className="border-b border-white/10 pb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-black text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-400" /> Preferred AI Engine Selection
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Choose which AI model or provider executes each pipeline stage. Select free/local models to run at $0 cost!
-                </p>
-              </div>
-
-              <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Zero-Cost Options Included
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
-                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-indigo-300">
-                  1. Topic & Niche Research Engine
-                </label>
-                <select
-                  value={researchProvider}
-                  onChange={(e) => setResearchProvider(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="GEMINI">Google Gemini 1.5 Flash (Free Tier Available)</option>
-                  <option value="OPENAI">OpenAI (GPT-4o Mini)</option>
-                  <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
-                  <option value="OPENROUTER">OpenRouter (Free & Open Source Models)</option>
-                  <option value="OLLAMA">Ollama / Local LLM (100% Free - Self-Hosted)</option>
-                </select>
-                <p className="text-[11px] text-slate-400">Scrapes web trends and extracts high-converting content angles.</p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
-                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-purple-300">
-                  2. Script Writing & Fact Check Engine
-                </label>
-                <select
-                  value={scriptProvider}
-                  onChange={(e) => setScriptProvider(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="OPENAI">OpenAI (GPT-4o / GPT-4o Mini)</option>
-                  <option value="GEMINI">Google Gemini Pro (Free Tier)</option>
-                  <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
-                  <option value="OPENROUTER">OpenRouter Compatible APIs</option>
-                  <option value="OLLAMA">Ollama Local Llama 3 / Mistral (100% Free)</option>
-                </select>
-                <p className="text-[11px] text-slate-400">Generates engaging YouTube scripts, hooks, and storyboards.</p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
-                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-cyan-300">
-                  3. Voice Synthesis & Narration Engine
-                </label>
-                <select
-                  value={voiceEngine}
-                  onChange={(e) => setVoiceEngine(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="PIPER_LOCAL">Piper TTS Local Engine (100% Free - Server Native)</option>
-                  <option value="OPENAI_TTS">OpenAI Voice (tts-1 / tts-1-hd)</option>
-                  <option value="ELEVENLABS">ElevenLabs Premium AI Voice</option>
-                </select>
-                <p className="text-[11px] text-slate-400">Renders high-quality AI voiceover audio narration.</p>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
-                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-emerald-300">
-                  4. Image Scene Generation Engine
-                </label>
-                <select
-                  value={imageEngine}
-                  onChange={(e) => setImageEngine(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="POLLINATIONS_FREE">Pollinations AI (100% Free - Unlimited Image Scenes)</option>
-                  <option value="DALL_E_3">OpenAI DALL-E 3</option>
-                  <option value="STABILITY">Stability AI SDXL</option>
-                </select>
-                <p className="text-[11px] text-slate-400">Generates visual B-roll scenes and image assets for each video segment.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 2: API KEY VAULT */}
+        {/* TAB 1: API KEY VAULT */}
         {activeTab === 'API_KEYS' && (
           <div className="space-y-6">
-            <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-4 shadow-2xl">
-              <div className="flex items-center gap-2 border-b border-white/10 pb-4">
-                <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                <h2 className="text-base font-black text-white">Add Your AI Provider API Keys</h2>
+            <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-indigo-400" />
+                  <h2 className="text-base font-black text-white">Add AI Provider API Key</h2>
+                </div>
+                <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  AES-256 Encrypted
+                </span>
               </div>
 
               <form onSubmit={handleSaveKey} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">AI Provider</label>
+                  <label className="block font-bold text-slate-300 mb-1">Select AI Provider</label>
                   <select
-                    value={providerId}
-                    onChange={(e) => setProviderId(e.target.value)}
+                    value={selectedProviderName}
+                    onChange={(e) => setSelectedProviderName(e.target.value)}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   >
-                    {providers.map((p) => (
-                      <option key={p.id} value={p.id}>{p.displayName} ({p.name})</option>
+                    {DEFAULT_PROVIDERS.map((p) => (
+                      <option key={p.name} value={p.name}>{p.displayName}</option>
                     ))}
                   </select>
                 </div>
@@ -263,7 +209,7 @@ export default function CreatorSettingsPage() {
                   <label className="block font-bold text-slate-300 mb-1">Key Label</label>
                   <input
                     type="text"
-                    placeholder="e.g. OpenAI / Gemini Key"
+                    placeholder="e.g. My Personal OpenAI Key"
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
@@ -271,13 +217,13 @@ export default function CreatorSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">API Key</label>
+                  <label className="block font-bold text-slate-300 mb-1">API Key String</label>
                   <div className="relative">
                     <input
                       type={showKey ? 'text' : 'password'}
-                      placeholder="sk-..."
-                      value={key}
-                      onChange={(e) => setKey(e.target.value)}
+                      placeholder={DEFAULT_PROVIDERS.find((p) => p.name === selectedProviderName)?.placeholder || 'Enter API Key'}
+                      value={keyInput}
+                      onChange={(e) => setKeyInput(e.target.value)}
                       className="w-full bg-slate-900 border border-white/10 rounded-xl pl-4 pr-10 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
                     />
                     <button
@@ -293,44 +239,150 @@ export default function CreatorSettingsPage() {
                 <div className="md:col-span-3 flex justify-end pt-2">
                   <button
                     type="submit"
-                    disabled={savingKey}
-                    className="py-3 px-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all"
+                    disabled={savingKey || !keyInput}
+                    className="py-3 px-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 disabled:opacity-50 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all cursor-pointer"
                   >
                     <Lock className="w-4 h-4" />
-                    <span>Save Encrypted API Key</span>
+                    <span>Save & Encrypt API Key</span>
                   </button>
                 </div>
               </form>
             </div>
 
+            {/* List of Configured API Keys */}
             <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
-              <div className="p-4 bg-slate-950/80 border-b border-white/10 text-xs font-bold text-slate-300 uppercase tracking-wider">
-                Configured API Keys ({keys.length})
+              <div className="p-4 bg-slate-950/80 border-b border-white/10 flex items-center justify-between text-xs font-bold text-slate-300 uppercase tracking-wider">
+                <span>Configured AI API Keys ({keys.length})</span>
+                <span className="text-[11px] text-slate-400 font-normal lowercase">Keys are securely stored and never shown again</span>
               </div>
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-900/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-white/10">
-                  <tr>
-                    <th className="px-6 py-4 font-bold">Label</th>
-                    <th className="px-6 py-4 font-bold">Provider</th>
-                    <th className="px-6 py-4 font-bold">Security Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {keys.map((k) => (
-                    <tr key={k.id} className="hover:bg-white/5 transition-colors">
-                      <td className="px-6 py-4 font-bold text-white">{k.label}</td>
-                      <td className="px-6 py-4">
-                        <span className="px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/30">
-                          {k.provider?.displayName || k.provider?.name}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 font-mono text-[11px] text-emerald-400">
-                        AES-256 Encrypted in Database
-                      </td>
+              {keys.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 text-xs">
+                  <KeyRound className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                  No API keys added yet. Add your OpenAI, Google Gemini, or Anthropic API key above to start generating videos!
+                </div>
+              ) : (
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-900/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-white/10">
+                    <tr>
+                      <th className="px-6 py-4 font-bold">Label</th>
+                      <th className="px-6 py-4 font-bold">Provider</th>
+                      <th className="px-6 py-4 font-bold">Status</th>
+                      <th className="px-6 py-4 font-bold text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {keys.map((k) => (
+                      <tr key={k.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4 font-bold text-white">{k.label}</td>
+                        <td className="px-6 py-4">
+                          <span className="px-2.5 py-1 rounded-md bg-indigo-500/20 text-indigo-300 text-[10px] font-bold border border-indigo-500/30">
+                            {k.provider?.displayName || k.provider?.name || k.providerId}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-[11px] text-emerald-400 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          Encrypted & Active
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleDeleteKey(k.id)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                            title="Delete Key"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: AI MODEL SELECTION */}
+        {activeTab === 'AI_ENGINES' && (
+          <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+            <div className="border-b border-white/10 pb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-black text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-400" /> Preferred AI Engine Selection
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Choose which AI model executes each pipeline step. Select free/local options to run at zero cost!
+                </p>
+              </div>
+
+              <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Zero-Cost Options Available
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
+                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-indigo-300">
+                  1. Topic Research Engine
+                </label>
+                <select
+                  value={researchProvider}
+                  onChange={(e) => setResearchProvider(e.target.value)}
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="GEMINI">Google Gemini 1.5 Flash (Free Tier Available)</option>
+                  <option value="OPENAI">OpenAI (GPT-4o Mini)</option>
+                  <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
+                  <option value="OPENROUTER">OpenRouter (Free & Open Source Models)</option>
+                  <option value="OLLAMA">Ollama Local LLM (100% Free)</option>
+                </select>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
+                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-purple-300">
+                  2. Script Writing Engine
+                </label>
+                <select
+                  value={scriptProvider}
+                  onChange={(e) => setScriptProvider(e.target.value)}
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="OPENAI">OpenAI (GPT-4o / GPT-4o Mini)</option>
+                  <option value="GEMINI">Google Gemini Pro (Free Tier)</option>
+                  <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
+                  <option value="OPENROUTER">OpenRouter Compatible APIs</option>
+                  <option value="OLLAMA">Ollama Local Llama 3 (100% Free)</option>
+                </select>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
+                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-cyan-300">
+                  3. Voice Synthesis Engine
+                </label>
+                <select
+                  value={voiceEngine}
+                  onChange={(e) => setVoiceEngine(e.target.value)}
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="PIPER_LOCAL">Piper TTS Engine (100% Free - Server Built-In)</option>
+                  <option value="OPENAI_TTS">OpenAI Voice (tts-1)</option>
+                  <option value="ELEVENLABS">ElevenLabs AI Voice</option>
+                </select>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
+                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-emerald-300">
+                  4. B-Roll Scene Image Engine
+                </label>
+                <select
+                  value={imageEngine}
+                  onChange={(e) => setImageEngine(e.target.value)}
+                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="POLLINATIONS_FREE">Pollinations AI (100% Free - Unlimited Image Scenes)</option>
+                  <option value="DALL_E_3">OpenAI DALL-E 3</option>
+                  <option value="STABILITY">Stability AI SDXL</option>
+                </select>
+              </div>
             </div>
           </div>
         )}
@@ -359,106 +411,27 @@ export default function CreatorSettingsPage() {
                 onChange={(url) => setWatermarkUrl(url)}
                 helperText="Upload transparent PNG watermark"
               />
-
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">Watermark Overlay Position</label>
-                <select
-                  value={watermarkPosition}
-                  onChange={(e) => setWatermarkPosition(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="bottom-right">Bottom Right Corner (Default)</option>
-                  <option value="bottom-left">Bottom Left Corner</option>
-                  <option value="top-right">Top Right Corner</option>
-                  <option value="top-left">Top Left Corner</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-300 mb-1">Content Niche / Voice Tone</label>
-                <input
-                  type="text"
-                  value={brandNiche}
-                  onChange={(e) => setBrandNiche(e.target.value)}
-                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                  placeholder="e.g. AI Tools & Tech Automation"
-                />
-              </div>
             </div>
           </div>
         )}
 
-        {/* TAB 4: PUBLISHING & AUTOMATION */}
+        {/* TAB 4: PUBLISHING */}
         {activeTab === 'PUBLISHING' && (
           <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
             <div className="border-b border-white/10 pb-4">
-              <h2 className="text-base font-black text-white">Automated Publishing & Execution Safeguards</h2>
-              <p className="text-xs text-slate-400 mt-0.5 font-sans">Configure automated YouTube background uploads and execution options.</p>
+              <h2 className="text-base font-black text-white">Automated YouTube Uploads</h2>
             </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/60 border border-white/5">
-                <div>
-                  <div className="font-bold text-white">Automatic Background Uploads</div>
-                  <div className="text-[11px] text-slate-400">Automatically upload rendered videos to your connected YouTube & social channels</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={autoPublish}
-                  onChange={(e) => setAutoPublish(e.target.checked)}
-                  className="w-5 h-5 rounded border-white/20 bg-slate-950 text-indigo-600 focus:ring-0"
-                />
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/60 border border-white/5 text-xs">
+              <div>
+                <div className="font-bold text-white">Automatic Background Uploads</div>
+                <div className="text-[11px] text-slate-400">Automatically upload finished videos to your connected YouTube Channel</div>
               </div>
-
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/60 border border-white/5">
-                <div>
-                  <div className="font-bold text-white">Automatic Retry on Rate Limits</div>
-                  <div className="text-[11px] text-slate-400 font-sans">Automatically retry rendering or uploading if API limits occur</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={autoRetry}
-                  onChange={(e) => setAutoRetry(e.target.checked)}
-                  className="w-5 h-5 rounded border-white/20 bg-slate-950 text-indigo-600 focus:ring-0"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/60 border border-white/5">
-                <div>
-                  <div className="font-bold text-white">Save as YouTube Unlisted Draft</div>
-                  <div className="text-[11px] text-slate-400 font-sans">Save uploaded videos as Unlisted YouTube Drafts before releasing to public</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={draftBeforePublish}
-                  onChange={(e) => setDraftBeforePublish(e.target.checked)}
-                  className="w-5 h-5 rounded border-white/20 bg-slate-950 text-indigo-600 focus:ring-0"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: NOTIFICATIONS */}
-        {activeTab === 'NOTIFICATIONS' && (
-          <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
-            <div className="border-b border-white/10 pb-4">
-              <h2 className="text-base font-black text-white">Execution Alerts & Notifications</h2>
-              <p className="text-xs text-slate-400 mt-0.5 font-sans">Receive alerts when videos finish rendering or uploading to YouTube.</p>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-900/60 border border-white/5">
-                <div>
-                  <div className="font-bold text-white font-sans">Alert on Successful YouTube Publish</div>
-                  <div className="text-[11px] text-slate-400 font-sans">Receive notification with live video link when publish completes</div>
-                </div>
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="w-5 h-5 rounded border-white/20 bg-slate-950 text-indigo-600 focus:ring-0"
-                />
-              </div>
+              <input
+                type="checkbox"
+                checked={autoPublish}
+                onChange={(e) => setAutoPublish(e.target.checked)}
+                className="w-5 h-5 rounded border-white/20 bg-slate-950 text-indigo-600 focus:ring-0"
+              />
             </div>
           </div>
         )}
