@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────────────────────────
-# Dockerfile.worker — BullMQ Workers
-# Shared image for all pipeline worker processes
+# Dockerfile.worker — BullMQ Unified Pipeline Worker
+# Consolidated high-performance worker image for all pipeline stages
 # ─────────────────────────────────────────────────────────────────
 
 FROM node:22-alpine AS builder
@@ -34,5 +34,5 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/workers/dist ./dist
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
-# Default command overridden per service in docker-compose.yml
-CMD ["node", "dist/research/main.js"]
+# Execute unified worker by default
+CMD ["node", "dist/unified.js"]

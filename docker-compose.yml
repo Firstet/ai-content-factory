@@ -1,11 +1,12 @@
 # ==================================================
-# AI Content Factory — Dokploy Compatible Compose
+# AI Content Factory — High-Performance Lean Docker Compose
+# Consolidated 6-Container Architecture (Optimized for RAM & Speed)
 # Start everything: docker compose up --build -d
 # ==================================================
 
 services:
   # ─────────────────────────────────────────
-  # PostgreSQL
+  # PostgreSQL Database
   # ─────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
@@ -27,7 +28,7 @@ services:
       - acf_network
 
   # ─────────────────────────────────────────
-  # Redis
+  # Redis Queue & Cache
   # ─────────────────────────────────────────
   redis:
     image: redis:7-alpine
@@ -46,7 +47,7 @@ services:
       - acf_network
 
   # ─────────────────────────────────────────
-  # MinIO (S3-Compatible Object Storage)
+  # MinIO (S3 Object Storage)
   # ─────────────────────────────────────────
   minio:
     image: minio/minio:latest
@@ -69,7 +70,7 @@ services:
       - acf_network
 
   # ─────────────────────────────────────────
-  # MinIO Bucket Init (one-shot job)
+  # MinIO Bucket Init (One-shot Setup)
   # ─────────────────────────────────────────
   minio-init:
     image: minio/mc:latest
@@ -87,7 +88,7 @@ services:
       - acf_network
 
   # ─────────────────────────────────────────
-  # NestJS API
+  # NestJS API Engine
   # ─────────────────────────────────────────
   api:
     build:
@@ -120,7 +121,7 @@ services:
       - acf_network
 
   # ─────────────────────────────────────────
-  # Next.js Web App
+  # Next.js Web App Studio
   # ─────────────────────────────────────────
   web:
     build:
@@ -139,86 +140,14 @@ services:
       - acf_network
 
   # ─────────────────────────────────────────
-  # BullMQ Workers (all pipeline stages)
+  # Unified Pipeline Worker (All Queues in 1 Process for High RAM Efficiency)
   # ─────────────────────────────────────────
-  worker-research:
+  worker:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
     restart: unless-stopped
-    command: ["node", "dist/workers/research/main.js"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-    networks:
-      - acf_network
-
-  worker-script:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile.worker
-    restart: unless-stopped
-    command: ["node", "dist/workers/script/main.js"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-    networks:
-      - acf_network
-
-  worker-voice:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile.worker
-    restart: unless-stopped
-    command: ["node", "dist/workers/voice/main.js"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-    networks:
-      - acf_network
-
-  worker-image:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile.worker
-    restart: unless-stopped
-    command: ["node", "dist/workers/image/main.js"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-    networks:
-      - acf_network
-
-  worker-video:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile.worker
-    restart: unless-stopped
-    command: ["node", "dist/workers/video/main.js"]
+    command: ["node", "dist/unified.js"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -233,85 +162,8 @@ services:
     networks:
       - acf_network
 
-  worker-thumbnail:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile.worker
-    restart: unless-stopped
-    command: ["node", "dist/workers/thumbnail/main.js"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-    networks:
-      - acf_network
-
-  worker-upload:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile.worker
-    restart: unless-stopped
-    command: ["node", "dist/workers/upload/main.js"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-    networks:
-      - acf_network
-
-  worker-analytics:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile.worker
-    restart: unless-stopped
-    command: ["node", "dist/workers/analytics/main.js"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
-      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-    networks:
-      - acf_network
-
-  # ─────────────────────────────────────────
-  # Nginx Reverse Proxy
-  # ─────────────────────────────────────────
-  nginx:
-    image: nginx:1.25-alpine
-    restart: unless-stopped
-    depends_on:
-      - api
-      - web
-    ports:
-      - "8080:80"
-    volumes:
-      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
-      - nginx_logs:/var/log/nginx
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    networks:
-      - acf_network
-
 # ─────────────────────────────────────────
-# Volumes
+# Persistent Storage Volumes
 # ─────────────────────────────────────────
 volumes:
   postgres_data:
@@ -321,8 +173,6 @@ volumes:
   minio_data:
     driver: local
   render_cache:
-    driver: local
-  nginx_logs:
     driver: local
 
 # ─────────────────────────────────────────
