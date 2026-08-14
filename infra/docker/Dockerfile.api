@@ -3,8 +3,7 @@
 # Multi-stage build for production
 # ─────────────────────────────────────────────────────────────────
 
-# Stage 1: Dependencies
-FROM node:22-alpine AS deps
+FROM node:22-alpine AS builder
 RUN npm install -g pnpm@9.15.4
 WORKDIR /app
 
@@ -12,15 +11,11 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* .npmrc ./
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+COPY workers/package.json ./workers/
 
 RUN pnpm install
 
-# Stage 2: Build
-FROM node:22-alpine AS builder
-RUN npm install -g pnpm@9.15.4
-WORKDIR /app
-
-COPY --from=deps /app/node_modules ./node_modules
 COPY packages/shared ./packages/shared
 COPY apps/api ./apps/api
 COPY tsconfig.json ./
@@ -34,7 +29,7 @@ RUN cd apps/api && npx prisma generate
 # Build NestJS
 RUN pnpm --filter api build
 
-# Stage 3: Production Runner
+# Stage 2: Production Runner
 FROM node:22-alpine AS runner
 RUN npm install -g pnpm@9.15.4
 
@@ -45,10 +40,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy production deps
-COPY --from=deps /app/node_modules ./node_modules
-
-# Copy built output
+# Copy built app and node_modules
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
