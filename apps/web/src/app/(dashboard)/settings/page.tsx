@@ -161,13 +161,6 @@ export default function CreatorSettingsPage() {
           })}
         </div>
 
-        {/* Success Banner */}
-        {successMsg && (
-          <div className="p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-            <span>{successMsg}</span>
-          </div>
-        )}
 
         {/* TAB 1: API KEY VAULT */}
         {activeTab === 'API_KEYS' && (
