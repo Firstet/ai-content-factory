@@ -4,7 +4,7 @@
 // ============================================================
 import { Worker, Job } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
-import { createClient } from 'redis';
+import Redis from 'ioredis';
 
 export const prisma = new PrismaClient();
 
@@ -66,13 +66,12 @@ export async function emitJobProgress(
   progress: number,
   message: string,
 ) {
-  const client = createClient({ url: `redis://${redisConnection.host}:${redisConnection.port}` });
-  await client.connect();
+  const client = new Redis(redisConnection.port, redisConnection.host);
   await client.publish(
     'acf:job-progress',
     JSON.stringify({ videoId, step, progress, message, timestamp: new Date().toISOString() }),
   );
-  await client.disconnect();
+  await client.quit();
 }
 
 /**

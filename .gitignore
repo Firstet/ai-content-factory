@@ -12,3 +12,6 @@ pnpm-debug.log*
 coverage/
 .turbo/
 *.tsbuildinfo
+packages/shared/src/*.js
+packages/shared/src/*.d.ts
+packages/shared/src/*.js.map

@@ -56,7 +56,7 @@ createWorker(QUEUE_NAMES.RESEARCH, async (job: Job<ResearchJobData>) => {
 
     try {
       // Decrypt API key
-      const { CryptoService } = await import('./crypto-helper');
+      const { CryptoService } = await import('../shared/crypto-helper');
       const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
 
       // Build research prompt
@@ -73,7 +73,7 @@ Return as JSON: { summary, angles, facts, audienceInsights }`;
         .replace(/{{language}}/g, language);
 
       // Call AI provider
-      const { callTextProvider } = await import('./ai-helper');
+      const { callTextProvider } = await import('../shared/ai-helper');
       const response = await callTextProvider(provider.name, apiKey, promptText);
 
       try {

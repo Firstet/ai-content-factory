@@ -88,7 +88,7 @@ export async function callImageProvider(
       quality: 'hd',
       n: 1,
     });
-    return res.data.map(d => d.url!).filter(Boolean);
+    return (res.data || []).map(d => d.url!).filter(Boolean);
   }
   throw new Error(`Image generation not supported for ${providerName}`);
 }

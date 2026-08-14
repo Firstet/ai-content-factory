@@ -3,7 +3,7 @@
 // ============================================================
 import 'dotenv/config';
 import { Job } from 'bullmq';
-import * as ffmpeg from 'fluent-ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 import * as Minio from 'minio';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -71,7 +71,7 @@ createWorker(QUEUE_NAMES.THUMBNAIL, async (job: Job) => {
             .output(outputPath)
             .size('1280x720')
             .outputOptions(['-q:v 2'])
-            .on('end', resolve)
+            .on('end', () => resolve())
             .on('error', reject)
             .run();
         });

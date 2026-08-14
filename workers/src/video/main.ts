@@ -4,7 +4,7 @@
 // ============================================================
 import 'dotenv/config';
 import { Job } from 'bullmq';
-import * as ffmpeg from 'fluent-ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 import * as Minio from 'minio';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -36,8 +36,8 @@ createWorker(QUEUE_NAMES.VIDEO, async (job: Job) => {
       orderBy: { createdAt: 'asc' },
     });
 
-    const audioAsset = assets.find(a => a.type === 'AUDIO');
-    const imageAssets = assets.filter(a => a.type === 'IMAGE');
+    const audioAsset = assets.find((a: any) => a.type === 'AUDIO');
+    const imageAssets = assets.filter((a: any) => a.type === 'IMAGE');
 
     if (!audioAsset) throw new Error('No audio asset found. Voice step may have failed.');
 
@@ -65,7 +65,7 @@ createWorker(QUEUE_NAMES.VIDEO, async (job: Job) => {
           .inputFormat('lavfi')
           .output(blackImg)
           .outputOptions(['-frames:v 1'])
-          .on('end', resolve)
+          .on('end', () => resolve())
           .on('error', reject)
           .run();
       });
