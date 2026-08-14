@@ -1,28 +1,14 @@
 import axios from 'axios';
 
-const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
-      return envUrl;
-    }
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    return `${protocol}//${hostname}:3001/api`;
-  }
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-};
-
 export const api = axios.create({
-  baseURL: getApiBaseUrl(),
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Interceptor updates baseURL dynamically per request
+// Attach JWT access token if present
 api.interceptors.request.use((config) => {
-  config.baseURL = getApiBaseUrl();
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('acf_token');
     if (token) {
@@ -43,7 +29,7 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem('acf_refresh_token');
         const userId = localStorage.getItem('acf_user_id');
         if (refreshToken && userId) {
-          const res = await axios.post(`${getApiBaseUrl()}/auth/refresh`, { userId, refreshToken });
+          const res = await axios.post('/api/auth/refresh', { userId, refreshToken });
           const { accessToken, refreshToken: newRefresh } = res.data;
           localStorage.setItem('acf_token', accessToken);
           localStorage.setItem('acf_refresh_token', newRefresh);

@@ -24,8 +24,9 @@ import { useToast } from '@/components/common/Toast';
 import { api } from '@/lib/api';
 
 const DEFAULT_PROVIDERS = [
-  { name: 'OPENAI', displayName: 'OpenAI (Official GPT-4o)', placeholder: 'sk-proj-...', defaultBaseUrl: 'https://api.openai.com/v1' },
+  { name: 'NVIDIA', displayName: 'NVIDIA NIM AI (Nemotron, Llama 3.3)', placeholder: 'nvapi-...', defaultBaseUrl: 'https://integrate.api.nvidia.com/v1' },
   { name: 'OPENAI_COMPATIBLE', displayName: 'OpenAI Compatible (DeepSeek, Groq, Anyscale, LM Studio)', placeholder: 'sk-...', defaultBaseUrl: 'https://api.deepseek.com/v1' },
+  { name: 'OPENAI', displayName: 'OpenAI (Official GPT-4o)', placeholder: 'sk-proj-...', defaultBaseUrl: 'https://api.openai.com/v1' },
   { name: 'GEMINI', displayName: 'Google Gemini (Free Tier Available)', placeholder: 'AIzaSy...', defaultBaseUrl: 'https://generativelanguage.googleapis.com' },
   { name: 'ANTHROPIC', displayName: 'Anthropic Claude 3.5', placeholder: 'sk-ant-...', defaultBaseUrl: 'https://api.anthropic.com' },
   { name: 'OPENROUTER', displayName: 'OpenRouter (Access 100+ Free Models)', placeholder: 'sk-or-...', defaultBaseUrl: 'https://openrouter.ai/api/v1' },
@@ -38,17 +39,17 @@ export default function CreatorSettingsPage() {
 
   // API Key Vault State
   const [keys, setKeys] = useState<any[]>([]);
-  const [selectedProviderName, setSelectedProviderName] = useState('OPENAI_COMPATIBLE');
-  const [label, setLabel] = useState('DeepSeek / OpenAI Compatible Key');
+  const [selectedProviderName, setSelectedProviderName] = useState('NVIDIA');
+  const [label, setLabel] = useState('NVIDIA Nemotron Key');
   const [keyInput, setKeyInput] = useState('');
-  const [baseUrlInput, setBaseUrlInput] = useState('https://api.deepseek.com/v1');
+  const [baseUrlInput, setBaseUrlInput] = useState('https://integrate.api.nvidia.com/v1');
   const [showKey, setShowKey] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
 
   // Preferred AI Engine Selection
-  const [researchProvider, setResearchProvider] = useState('OPENAI_COMPATIBLE');
-  const [scriptProvider, setScriptProvider] = useState('OPENAI_COMPATIBLE');
-  const [customModelName, setCustomModelName] = useState('deepseek-chat');
+  const [researchProvider, setResearchProvider] = useState('NVIDIA');
+  const [scriptProvider, setScriptProvider] = useState('NVIDIA');
+  const [customModelName, setCustomModelName] = useState('nvidia/nvidia-nemotron-nano-9b-v2');
   const [voiceEngine, setVoiceEngine] = useState('PIPER_LOCAL');
   const [imageEngine, setImageEngine] = useState('POLLINATIONS_FREE');
 
