@@ -17,9 +17,30 @@ export class ApiKeysService {
   async create(dto: CreateApiKeyDto) {
     const encryptedKey = this.crypto.encrypt(dto.key);
 
+    // Resolve provider by UUID or Name (e.g., OPENAI, GEMINI)
+    let provider = await this.prisma.provider.findFirst({
+      where: {
+        OR: [
+          { id: dto.providerId },
+          { name: dto.providerId.toUpperCase() },
+        ],
+      },
+    });
+
+    if (!provider) {
+      provider = await this.prisma.provider.create({
+        data: {
+          name: dto.providerId.toUpperCase(),
+          displayName: dto.providerId,
+          type: 'llm',
+          enabled: true,
+        },
+      });
+    }
+
     const apiKey = await this.prisma.apiKey.create({
       data: {
-        providerId: dto.providerId,
+        providerId: provider.id,
         label: dto.label,
         encryptedKey,
         platform: dto.platform,
@@ -28,7 +49,7 @@ export class ApiKeysService {
       select: { id: true, label: true, providerId: true, isActive: true, createdAt: true },
     });
 
-    return { ...apiKey, message: 'API key stored securely. It cannot be retrieved again.' };
+    return { ...apiKey, message: 'API key stored securely.' };
   }
 
   async findAll(providerId?: string) {

@@ -82,19 +82,8 @@ export default function CreatorSettingsPage() {
     if (!keyInput) return;
     setSavingKey(true);
     try {
-      // Find matching provider ID or create matching entry
-      let targetProvider = providers.find((p) => p.name === selectedProviderName);
-      let providerId = targetProvider?.id;
-
-      if (!providerId) {
-        // Fallback to sending providerId directly or reloading providers
-        const pRes = await api.get('/providers');
-        targetProvider = (pRes.data || []).find((p: any) => p.name === selectedProviderName);
-        providerId = targetProvider?.id || selectedProviderName;
-      }
-
       await api.post('/api-keys', {
-        providerId,
+        providerId: selectedProviderName,
         label: label || `${selectedProviderName} Key`,
         key: keyInput,
       });
@@ -104,7 +93,10 @@ export default function CreatorSettingsPage() {
       setTimeout(() => setSuccessMsg(''), 4000);
       loadKeyVault();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to save API key. Please check connection.');
+      const errorMsg = Array.isArray(err.response?.data?.message)
+        ? err.response.data.message.join(', ')
+        : err.response?.data?.message || 'Failed to save API key. Please check connection.';
+      alert(errorMsg);
     } finally {
       setSavingKey(false);
     }
