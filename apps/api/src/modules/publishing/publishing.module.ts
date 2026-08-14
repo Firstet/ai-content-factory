@@ -7,8 +7,12 @@ import { InstagramPublisher } from './publishers/instagram.publisher';
 import { FacebookPublisher } from './publishers/facebook.publisher';
 import { TwitterPublisher } from './publishers/twitter.publisher';
 import { LinkedInPublisher } from './publishers/linkedin.publisher';
+import { ChannelsModule } from '../channels/channels.module';
+import { PrismaModule } from '../../prisma/prisma.module';
+import { CryptoModule } from '../../common/crypto/crypto.module';
 
 @Module({
+  imports: [ChannelsModule, PrismaModule, CryptoModule],
   controllers: [PublishingController],
   providers: [
     PublishingService,
