@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { PipelineController } from './pipeline.controller';
 import { PipelineService } from './pipeline.service';
+import { AutoPilotSchedulerService } from './auto-pilot.scheduler';
 import { QUEUE_NAMES } from '@acf/shared';
 
 @Module({
@@ -22,7 +23,7 @@ import { QUEUE_NAMES } from '@acf/shared';
     ),
   ],
   controllers: [PipelineController],
-  providers: [PipelineService],
+  providers: [PipelineService, AutoPilotSchedulerService],
   exports: [PipelineService],
 })
 export class PipelineModule {}

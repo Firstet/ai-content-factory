@@ -30,6 +30,9 @@ import { QUEUE_NAMES } from '@acf/shared';
       envFilePath: ['.env', '.env.local'],
     }),
 
+    // ─── Cron Schedules ─────────────────────────────────────
+    ScheduleModule.forRoot(),
+
     // ─── Rate Limiting ───────────────────────────────────────
     ThrottlerModule.forRoot([
       {
