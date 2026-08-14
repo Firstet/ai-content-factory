@@ -13,12 +13,12 @@ export class ProvidersService implements OnModuleInit {
     const count = await this.prisma.provider.count();
     if (count === 0) {
       const defaultProviders = [
-        { name: 'OPENAI', displayName: 'OpenAI', type: 'llm', enabled: true },
-        { name: 'GEMINI', displayName: 'Google Gemini', type: 'llm', enabled: true },
-        { name: 'ANTHROPIC', displayName: 'Anthropic Claude', type: 'llm', enabled: true },
-        { name: 'OPENROUTER', displayName: 'OpenRouter', type: 'llm', enabled: true },
-        { name: 'ELEVENLABS', displayName: 'ElevenLabs Voice', type: 'voice', enabled: true },
-        { name: 'OLLAMA', displayName: 'Ollama Local LLM', type: 'llm', enabled: true },
+        { name: 'OPENAI', displayName: 'OpenAI', enabled: true, capabilities: ['llm', 'image', 'voice'], preferredFor: ['llm'] },
+        { name: 'GEMINI', displayName: 'Google Gemini', enabled: true, capabilities: ['llm'], preferredFor: ['llm'] },
+        { name: 'ANTHROPIC', displayName: 'Anthropic Claude', enabled: true, capabilities: ['llm'], preferredFor: ['llm'] },
+        { name: 'OPENROUTER', displayName: 'OpenRouter', enabled: true, capabilities: ['llm'], preferredFor: [] },
+        { name: 'ELEVENLABS', displayName: 'ElevenLabs Voice', enabled: true, capabilities: ['voice'], preferredFor: ['voice'] },
+        { name: 'OLLAMA', displayName: 'Ollama Local LLM', enabled: true, capabilities: ['llm'], preferredFor: [] },
       ];
 
       for (const p of defaultProviders) {

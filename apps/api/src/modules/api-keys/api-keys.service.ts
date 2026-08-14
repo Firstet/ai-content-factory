@@ -32,8 +32,9 @@ export class ApiKeysService {
         data: {
           name: dto.providerId.toUpperCase(),
           displayName: dto.providerId,
-          type: 'llm',
           enabled: true,
+          capabilities: [],
+          preferredFor: [],
         },
       });
     }
