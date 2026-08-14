@@ -9,6 +9,8 @@ export default function BrandsAdminPage() {
   const [brands, setBrands] = useState<any[]>([]);
   const [name, setName] = useState('');
   const [voiceTone, setVoiceTone] = useState('Professional, engaging, authoritative');
+  const [niche, setNiche] = useState('');
+  const [watermarkUrl, setWatermarkUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
   async function loadBrands() {
@@ -29,8 +31,10 @@ export default function BrandsAdminPage() {
     if (!name) return;
     setLoading(true);
     try {
-      await api.post('/brands', { name, voiceTone });
+      await api.post('/brands', { name, voiceTone, niche, watermarkUrl });
       setName('');
+      setNiche('');
+      setWatermarkUrl('');
       loadBrands();
     } catch (err) {
       console.error(err);
