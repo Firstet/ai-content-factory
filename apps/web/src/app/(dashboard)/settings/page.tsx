@@ -1127,6 +1127,7 @@ export default function CreatorSettingsPage() {
                 value={watermarkUrl}
                 onChange={(url) => setWatermarkUrl(url)}
                 helperText="Upload transparent PNG watermark"
+              />
             </div>
           </div>
         )}
