@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { subscribeToVideo } from '@/lib/ws';
+import { ContentPreviewModal } from '@/components/common/ContentPreviewModal';
 
 const STEPS = [
   { id: 'RESEARCH', label: '1. Topic Research' },
@@ -37,6 +38,7 @@ export default function PipelineMonitorPage({ params }: { params: Promise<{ id: 
   const [activeStep, setActiveStep] = useState('RESEARCH');
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState('Initializing pipeline...');
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   async function loadData() {
     try {
@@ -81,12 +83,22 @@ export default function PipelineMonitorPage({ params }: { params: Promise<{ id: 
             </h1>
           </div>
 
-          <button
-            onClick={loadData}
-            className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-200 border border-white/10 transition-all"
-          >
-            Refresh Status
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowPreviewModal(true)}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white text-xs font-black shadow-lg shadow-purple-500/20 flex items-center gap-1.5 transition-all"
+            >
+              <Film className="w-4 h-4 text-amber-300" />
+              Preview Video & Teleprompter
+            </button>
+
+            <button
+              onClick={loadData}
+              className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-200 border border-white/10 transition-all"
+            >
+              Refresh Status
+            </button>
+          </div>
         </div>
 
         {/* Live Progress Bar */}
@@ -200,6 +212,15 @@ export default function PipelineMonitorPage({ params }: { params: Promise<{ id: 
             )}
           </div>
         </div>
+
+        {/* Content & Video Preview Modal */}
+        <ContentPreviewModal
+          isOpen={showPreviewModal}
+          onClose={() => setShowPreviewModal(false)}
+          title={video?.title || 'Automated YouTube Video Studio Preview'}
+          videoUrl={video?.videoUrl}
+          audioUrl={video?.audioUrl}
+        />
       </div>
     </Shell>
   );

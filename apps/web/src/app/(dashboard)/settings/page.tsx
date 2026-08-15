@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/common/Toast';
 import { api } from '@/lib/api';
+import { VoicePreviewPlayer } from '@/components/common/VoicePreviewPlayer';
+import { ContentPreviewModal } from '@/components/common/ContentPreviewModal';
 
 const DEFAULT_PROVIDERS = [
   {
@@ -128,6 +130,7 @@ export default function CreatorSettingsPage() {
   // Branding State
   const [logoUrl, setLogoUrl] = useState('');
   const [watermarkUrl, setWatermarkUrl] = useState('');
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Sync Provider change to default URL, model, and label
   useEffect(() => {
@@ -648,14 +651,30 @@ export default function CreatorSettingsPage() {
         {/* TAB 2: TASK & MODEL ASSIGNMENTS GRID */}
         {activeTab === 'TASK_ASSIGNMENTS' && (
           <div className="space-y-6">
+            {/* Live Voice Synthesizer & Voice Previewer */}
+            <VoicePreviewPlayer
+              selectedVoiceId={taskAssignments.voice.model || 'en_US-lessac-medium'}
+              onSelectVoice={(vId) => setTaskAssignments((p) => ({ ...p, voice: { ...p.voice, model: vId } }))}
+            />
+
             <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
-              <div className="border-b border-white/10 pb-4">
-                <h2 className="text-base font-black text-white flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-amber-400" /> Task-to-Key & Model Mapping Grid
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Specify exactly which API Key and Model handles each phase of your automated video production.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-4 gap-3">
+                <div>
+                  <h2 className="text-base font-black text-white flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-amber-400" /> Task-to-Key & Model Mapping Grid
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Specify exactly which API Key and Model handles each phase of your automated video production.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPreviewModal(true)}
+                  className="px-4 py-2 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/30 font-extrabold text-xs transition-all flex items-center gap-1.5 w-fit"
+                >
+                  <Film className="w-4 h-4 text-amber-300" />
+                  Test Video & Content Previewer
+                </button>
               </div>
 
               {/* 6 Specialized Task Cards */}
@@ -1108,10 +1127,17 @@ export default function CreatorSettingsPage() {
                 value={watermarkUrl}
                 onChange={(url) => setWatermarkUrl(url)}
                 helperText="Upload transparent PNG watermark"
-              />
             </div>
           </div>
         )}
+
+        {/* Content & In-App Video Previewer Modal */}
+        <ContentPreviewModal
+          isOpen={showPreviewModal}
+          onClose={() => setShowPreviewModal(false)}
+          title="Automated YouTube Video Studio Preview"
+          niche="Tech & AI Innovations"
+        />
       </div>
     </Shell>
   );

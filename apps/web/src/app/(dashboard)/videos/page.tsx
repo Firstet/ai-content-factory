@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { Shell } from '@/components/layout/Shell';
-import { Video as VideoIcon, Play, Trash2, Sparkles, PlusCircle } from 'lucide-react';
+import { Video as VideoIcon, Play, Trash2, Sparkles, PlusCircle, Eye, Film } from 'lucide-react';
 import { api } from '@/lib/api';
+import { ContentPreviewModal } from '@/components/common/ContentPreviewModal';
 import Link from 'next/link';
 
 export default function VideosPage() {
   const [videos, setVideos] = useState<any[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
 
   async function loadVideos() {
     try {
@@ -107,7 +109,15 @@ export default function VideosPage() {
                       {v.durationSeconds ? `${v.durationSeconds}s` : 'N/A'}
                     </td>
                     <td className="px-6 py-4 text-slate-400">{new Date(v.createdAt).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => setSelectedVideo(v)}
+                        className="px-3 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/30 font-bold text-xs flex items-center gap-1.5 transition-all"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Preview</span>
+                      </button>
+
                       <button
                         onClick={() => handleDelete(v.id)}
                         className="p-2 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/5 transition-all"
@@ -121,6 +131,15 @@ export default function VideosPage() {
             </tbody>
           </table>
         </div>
+
+        {/* In-App Content Previewer Modal */}
+        <ContentPreviewModal
+          isOpen={!!selectedVideo}
+          onClose={() => setSelectedVideo(null)}
+          title={selectedVideo?.title || 'Video Content Preview'}
+          videoUrl={selectedVideo?.videoUrl}
+          audioUrl={selectedVideo?.audioUrl}
+        />
       </div>
     </Shell>
   );

@@ -1,0 +1,252 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { Volume2, Play, Pause, RefreshCw, Sparkles, CheckCircle2, Music2, Cpu } from 'lucide-react';
+import { api } from '@/lib/api';
+
+export interface VoiceOption {
+  id: string;
+  name: string;
+  gender: 'male' | 'female';
+  style: string;
+  accent: string;
+  provider: 'PIPER' | 'OPENAI' | 'ELEVENLABS';
+  sampleText: string;
+}
+
+interface VoicePreviewPlayerProps {
+  selectedVoiceId?: string;
+  onSelectVoice?: (voiceId: string) => void;
+  compact?: boolean;
+}
+
+export function VoicePreviewPlayer({ selectedVoiceId, onSelectVoice, compact = false }: VoicePreviewPlayerProps) {
+  const [voices, setVoices] = useState<VoiceOption[]>([]);
+  const [currentVoiceId, setCurrentVoiceId] = useState<string>(selectedVoiceId || 'en_US-lessac-medium');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [loadingAudio, setLoadingAudio] = useState(false);
+  const [customText, setCustomText] = useState('');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    fetchVoices();
+  }, []);
+
+  useEffect(() => {
+    if (selectedVoiceId && selectedVoiceId !== currentVoiceId) {
+      setCurrentVoiceId(selectedVoiceId);
+    }
+  }, [selectedVoiceId]);
+
+  const fetchVoices = async () => {
+    try {
+      const res = await api.get('/voice/voices');
+      setVoices(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch voice catalog:', err);
+    }
+  };
+
+  const activeVoice = voices.find((v) => v.id === currentVoiceId) || {
+    id: 'en_US-lessac-medium',
+    name: 'Lessac (Studio Narrator)',
+    gender: 'male',
+    style: 'Professional & Authoritative',
+    accent: 'US English',
+    provider: 'PIPER',
+    sampleText: 'Welcome to your AI Content Factory. This is a preview of the Lessac studio voice narration.',
+  };
+
+  const handlePlayPreview = async () => {
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    setLoadingAudio(true);
+    try {
+      const previewUrl = `/api/voice/preview?voiceId=${encodeURIComponent(currentVoiceId)}${
+        customText ? `&text=${encodeURIComponent(customText)}` : ''
+      }&t=${Date.now()}`;
+
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+
+      const newAudio = new Audio(previewUrl);
+      audioRef.current = newAudio;
+
+      newAudio.oncanplaythrough = () => {
+        setLoadingAudio(false);
+        newAudio.play();
+        setIsPlaying(true);
+      };
+
+      newAudio.onended = () => {
+        setIsPlaying(false);
+      };
+
+      newAudio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setLoadingAudio(false);
+        setIsPlaying(false);
+      };
+    } catch (err) {
+      console.error('Failed to stream audio preview:', err);
+      setLoadingAudio(false);
+      setIsPlaying(false);
+    }
+  };
+
+  const handleVoiceChange = (vId: string) => {
+    setCurrentVoiceId(vId);
+    if (onSelectVoice) onSelectVoice(vId);
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs">
+        <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300">
+          <Volume2 className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <select
+            value={currentVoiceId}
+            onChange={(e) => handleVoiceChange(e.target.value)}
+            className="w-full bg-slate-900 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white font-bold focus:outline-none"
+          >
+            {voices.map((v) => (
+              <option key={v.id} value={v.id}>
+                🎙️ {v.name} ({v.accent})
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="button"
+          onClick={handlePlayPreview}
+          disabled={loadingAudio}
+          className="px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/30 font-bold text-xs flex items-center gap-1.5 transition-all"
+        >
+          {loadingAudio ? (
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          ) : isPlaying ? (
+            <Pause className="w-3.5 h-3.5" />
+          ) : (
+            <Play className="w-3.5 h-3.5 text-emerald-400" />
+          )}
+          <span>{isPlaying ? 'Pause' : 'Listen'}</span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/60 border border-emerald-500/30 shadow-2xl space-y-5">
+      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <Volume2 className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-white flex items-center gap-2">
+              Piper TTS Voice Synthesizer & Studio Voices
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                100% FREE LOCAL TTS
+              </span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Select and preview voice narrators for your automated video scripts.
+            </p>
+          </div>
+        </div>
+
+        {isPlaying && (
+          <div className="flex items-center gap-1">
+            <span className="w-1 h-4 bg-emerald-400 animate-pulse rounded-full" />
+            <span className="w-1 h-6 bg-emerald-400 animate-pulse delay-75 rounded-full" />
+            <span className="w-1 h-3 bg-emerald-400 animate-pulse delay-150 rounded-full" />
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        {/* Voice Selector Dropdown */}
+        <div>
+          <label className="block text-slate-300 font-bold mb-1.5 flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+            Choose Voice Narrator
+          </label>
+          <select
+            value={currentVoiceId}
+            onChange={(e) => handleVoiceChange(e.target.value)}
+            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-emerald-300 font-extrabold focus:outline-none focus:border-emerald-500"
+          >
+            {voices.map((v) => (
+              <option key={v.id} value={v.id}>
+                🎙️ {v.name} — {v.accent} ({v.style})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Custom Sample Text Input */}
+        <div>
+          <label className="block text-slate-300 font-bold mb-1.5 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            Test Custom Narration Phrase
+          </label>
+          <input
+            type="text"
+            placeholder={activeVoice.sampleText}
+            value={customText}
+            onChange={(e) => setCustomText(e.target.value)}
+            className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+          />
+        </div>
+      </div>
+
+      {/* Active Voice Specs Card & Play Bar */}
+      <div className="p-4 rounded-2xl bg-slate-950/90 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-white text-xs">{activeVoice.name}</span>
+            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-indigo-500/20 text-indigo-300">
+              {activeVoice.gender.toUpperCase()} • {activeVoice.accent}
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 italic">"{customText || activeVoice.sampleText}"</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handlePlayPreview}
+          disabled={loadingAudio}
+          className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-90 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all cursor-pointer w-fit shrink-0"
+        >
+          {loadingAudio ? (
+            <>
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              <span>Synthesizing Audio...</span>
+            </>
+          ) : isPlaying ? (
+            <>
+              <Pause className="w-4 h-4 text-emerald-200" />
+              <span>Pause Voice Preview</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-4 h-4 text-emerald-200" />
+              <span>Play Voice Preview</span>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}

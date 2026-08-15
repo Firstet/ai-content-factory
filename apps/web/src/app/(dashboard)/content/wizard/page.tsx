@@ -18,6 +18,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { MediaUploader } from '@/components/common/MediaUploader';
+import { VoicePreviewPlayer } from '@/components/common/VoicePreviewPlayer';
 import { api } from '@/lib/api';
 
 export default function ContentWizardPage() {
@@ -338,18 +339,22 @@ export default function ContentWizardPage() {
             </div>
           )}
 
-          {/* STEP 6: AI PROVIDERS */}
+          {/* STEP 6: AI PROVIDERS & VOICE PREVIEW */}
           {currentStep === 6 && (
             <div className="space-y-6 animate-in fade-in">
               <div>
-                <h2 className="text-lg font-black text-white">Step 6: AI Provider & Cost Optimizer</h2>
-                <p className="text-xs text-slate-400 mt-1">Cost optimizer selects the cheapest compatible model.</p>
+                <h2 className="text-lg font-black text-white">Step 6: AI Provider & Voice Narrator Selection</h2>
+                <p className="text-xs text-slate-400 mt-1">Select and test your preferred Piper TTS voice narrator.</p>
               </div>
 
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
-                  ⚡ Smart Cost Optimizer Active: Using Gemini Flash / Nemotron for research, Piper for local voice (free), and FFmpeg for video assembly.
-                </div>
+              {/* Voice Synthesizer Player */}
+              <VoicePreviewPlayer
+                selectedVoiceId={formData.voiceProvider.includes('Amy') ? 'en_US-amy-medium' : 'en_US-lessac-medium'}
+                onSelectVoice={(vId) => setFormData({ ...formData, voiceProvider: `Piper (${vId})` })}
+              />
+
+              <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold flex items-center justify-between">
+                <span>⚡ Smart Cost Optimizer Active: Using free built-in Piper TTS & Pollinations AI visual generator.</span>
               </div>
             </div>
           )}
