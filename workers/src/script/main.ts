@@ -39,7 +39,7 @@ createWorker(QUEUE_NAMES.SCRIPT, async (job: Job<ScriptJobData>) => {
 
   // Get AI provider
   const provider = await prisma.provider.findFirst({
-    where: { enabled: true, capabilities: { has: 'TEXT' } },
+    where: { enabled: true, apiKeys: { some: { isActive: true } } },
     include: { apiKeys: { where: { isActive: true }, take: 1 } },
   });
 
@@ -47,7 +47,9 @@ createWorker(QUEUE_NAMES.SCRIPT, async (job: Job<ScriptJobData>) => {
   let rawText = '';
 
   if (provider && provider.apiKeys.length > 0) {
-    const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
+    const activeKey = provider.apiKeys[0];
+    const apiKey = CryptoService.decrypt(activeKey.encryptedKey);
+    const customBaseURL = activeKey.platform || provider.baseUrl || undefined;
     
     const systemPrompt = `You are an expert YouTube scriptwriter. Always return valid JSON.`;
     
@@ -78,7 +80,7 @@ Return ONLY valid JSON in this exact structure:
 
     await emitJobProgress(videoId, PipelineStep.SCRIPT, 30, `Writing with ${provider.displayName}...`);
 
-    const response = await callTextProvider(provider.name, apiKey, promptText, systemPrompt);
+    const response = await callTextProvider(provider.name, apiKey, promptText, systemPrompt, undefined, customBaseURL);
     rawText = response;
 
     try {

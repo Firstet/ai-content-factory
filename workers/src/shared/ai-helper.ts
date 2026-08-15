@@ -12,8 +12,11 @@ export async function callTextProvider(
   prompt: string,
   systemPrompt?: string,
   model?: string,
+  customBaseURL?: string,
 ): Promise<string> {
-  switch (providerName) {
+  const upperProvider = providerName.toUpperCase();
+
+  switch (upperProvider) {
     case 'OPENAI': {
       const client = new OpenAI({ apiKey });
       const res = await client.chat.completions.create({
@@ -43,14 +46,25 @@ export async function callTextProvider(
       const res = await m.generateContent(systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt);
       return res.response.text();
     }
-    case 'OPENROUTER':
-    case 'NVIDIA': {
-      const baseURL = providerName === 'OPENROUTER'
+    case 'NVIDIA':
+    case 'OPENAI_COMPATIBLE':
+    case 'OPENROUTER': {
+      const defaultBase = upperProvider === 'NVIDIA'
+        ? 'https://integrate.api.nvidia.com/v1'
+        : upperProvider === 'OPENROUTER'
         ? 'https://openrouter.ai/api/v1'
-        : 'https://integrate.api.nvidia.com/v1';
+        : 'https://api.deepseek.com/v1';
+
+      const baseURL = customBaseURL || defaultBase;
+      const defaultModel = upperProvider === 'NVIDIA'
+        ? 'nvidia/nvidia-nemotron-nano-9b-v2'
+        : upperProvider === 'OPENROUTER'
+        ? 'meta-llama/llama-3.1-70b-instruct'
+        : 'deepseek-chat';
+
       const client = new OpenAI({ apiKey, baseURL });
       const res = await client.chat.completions.create({
-        model: model || (providerName === 'OPENROUTER' ? 'meta-llama/llama-3.1-70b-instruct' : 'meta/llama-3.1-70b-instruct'),
+        model: model || defaultModel,
         messages: [
           ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
           { role: 'user' as const, content: prompt },
@@ -60,7 +74,7 @@ export async function callTextProvider(
       return res.choices[0]?.message?.content || '';
     }
     case 'OLLAMA': {
-      const baseUrl = process.env.OLLAMA_BASE_URL || 'http://host.docker.internal:11434';
+      const baseUrl = customBaseURL || process.env.OLLAMA_BASE_URL || 'http://host.docker.internal:11434';
       const client = new OpenAI({ apiKey: 'ollama', baseURL: `${baseUrl}/v1` });
       const res = await client.chat.completions.create({
         model: model || 'llama3.1',
@@ -68,8 +82,18 @@ export async function callTextProvider(
       });
       return res.choices[0]?.message?.content || '';
     }
-    default:
-      throw new Error(`Unknown AI provider: ${providerName}`);
+    default: {
+      // Fallback for any generic OpenAI compatible provider
+      const client = new OpenAI({ apiKey, baseURL: customBaseURL || 'https://api.openai.com/v1' });
+      const res = await client.chat.completions.create({
+        model: model || 'gpt-4o-mini',
+        messages: [
+          ...(systemPrompt ? [{ role: 'system' as const, content: systemPrompt }] : []),
+          { role: 'user' as const, content: prompt },
+        ],
+      });
+      return res.choices[0]?.message?.content || '';
+    }
   }
 }
 

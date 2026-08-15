@@ -43,9 +43,8 @@ createWorker(QUEUE_NAMES.RESEARCH, async (job: Job<ResearchJobData>) => {
 
   // 2. Get an enabled AI provider for text generation
   const provider = await prisma.provider.findFirst({
-    where: { enabled: true, capabilities: { has: 'TEXT' } },
+    where: { enabled: true, apiKeys: { some: { isActive: true } } },
     include: { apiKeys: { where: { isActive: true }, take: 1 } },
-    orderBy: [{ preferredFor: 'asc' }],
   });
 
   let researchSummary = '';
@@ -57,7 +56,9 @@ createWorker(QUEUE_NAMES.RESEARCH, async (job: Job<ResearchJobData>) => {
     try {
       // Decrypt API key
       const { CryptoService } = await import('../shared/crypto-helper');
-      const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
+      const activeKey = provider.apiKeys[0];
+      const apiKey = CryptoService.decrypt(activeKey.encryptedKey);
+      const customBaseURL = activeKey.platform || provider.baseUrl || undefined;
 
       // Build research prompt
       let promptText = prompt?.template || `Research the topic: "${topic}" thoroughly. Provide:
@@ -74,7 +75,7 @@ Return as JSON: { summary, angles, facts, audienceInsights }`;
 
       // Call AI provider
       const { callTextProvider } = await import('../shared/ai-helper');
-      const response = await callTextProvider(provider.name, apiKey, promptText);
+      const response = await callTextProvider(provider.name, apiKey, promptText, undefined, undefined, customBaseURL);
 
       try {
         const parsed = JSON.parse(response.replace(/```json\n?|\n?```/g, '').trim());
