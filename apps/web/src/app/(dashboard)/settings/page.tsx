@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/common/Toast';
 import { api } from '@/lib/api';
-import { VoicePreviewPlayer } from '@/components/common/VoicePreviewPlayer';
+import { VoicePreviewPlayer, DEFAULT_VOICES } from '@/components/common/VoicePreviewPlayer';
 import { ContentPreviewModal } from '@/components/common/ContentPreviewModal';
 
 const DEFAULT_PROVIDERS = [
@@ -888,13 +888,18 @@ export default function CreatorSettingsPage() {
                     </div>
 
                     <div>
-                      <label className="block text-slate-400 mb-1 font-bold">Voice Model</label>
-                      <input
-                        type="text"
-                        value={taskAssignments.voice.model}
+                      <label className="block text-slate-400 mb-1 font-bold">Assigned Studio Voice Narrator</label>
+                      <select
+                        value={taskAssignments.voice.model || 'en_US-lessac-medium'}
                         onChange={(e) => setTaskAssignments((p) => ({ ...p, voice: { ...p.voice, model: e.target.value } }))}
-                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-emerald-300 font-mono"
-                      />
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-emerald-300 font-extrabold focus:outline-none focus:border-indigo-500"
+                      >
+                        {DEFAULT_VOICES.map((v) => (
+                          <option key={v.id} value={v.id}>
+                            🎙️ {v.name} — {v.accent} ({v.style})
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>

@@ -14,6 +14,108 @@ export interface VoiceOption {
   sampleText: string;
 }
 
+export const DEFAULT_VOICES: VoiceOption[] = [
+  {
+    id: 'en_US-lessac-medium',
+    name: 'Lessac (Studio Narrator)',
+    gender: 'male',
+    style: 'Professional & Authoritative',
+    accent: 'US English',
+    provider: 'PIPER',
+    sampleText: 'Welcome to your AI Content Factory. This is a preview of the Lessac studio voice narration.',
+  },
+  {
+    id: 'en_US-amy-medium',
+    name: 'Amy (Enthusiastic Storyteller)',
+    gender: 'female',
+    style: 'Energetic & Engaging',
+    accent: 'US English',
+    provider: 'PIPER',
+    sampleText: 'Hey everyone! Welcome back to the channel. Today we are exploring ground-breaking AI automation.',
+  },
+  {
+    id: 'en_US-danny-low',
+    name: 'Danny (Deep Bass Documentary)',
+    gender: 'male',
+    style: 'Deep & Cinematic',
+    accent: 'US English',
+    provider: 'PIPER',
+    sampleText: 'In a world driven by artificial intelligence, automated video creation changes everything.',
+  },
+  {
+    id: 'en_GB-alan-low',
+    name: 'Alan (British News Anchor)',
+    gender: 'male',
+    style: 'Formal & News',
+    accent: 'British English',
+    provider: 'PIPER',
+    sampleText: 'Reporting live from the front lines of technology and artificial intelligence innovation.',
+  },
+  {
+    id: 'en_US-ryan-medium',
+    name: 'Ryan (Tech Presenter)',
+    gender: 'male',
+    style: 'Upbeat & Clear',
+    accent: 'US English',
+    provider: 'PIPER',
+    sampleText: 'Check out these top 5 AI tools that will save you hours of work every single week.',
+  },
+  {
+    id: 'en_US-bryce-medium',
+    name: 'Bryce (Documentary Narrator)',
+    gender: 'male',
+    style: 'Calm & Educational',
+    accent: 'US English',
+    provider: 'PIPER',
+    sampleText: 'Deep within the neural networks, complex algorithms process billions of data points in real time.',
+  },
+  {
+    id: 'en_US-kristin-medium',
+    name: 'Kristin (Product Reviewer)',
+    gender: 'female',
+    style: 'Friendly & Articulate',
+    accent: 'US English',
+    provider: 'PIPER',
+    sampleText: 'Here is a comprehensive review of the latest software updates and how to use them effectively.',
+  },
+  {
+    id: 'en_US-joe-medium',
+    name: 'Joe (Casual Conversational)',
+    gender: 'male',
+    style: 'Warm & Natural',
+    accent: 'US English',
+    provider: 'PIPER',
+    sampleText: 'Thanks for tuning in! Don\'t forget to hit that subscribe button for daily tech insights.',
+  },
+  {
+    id: 'alloy',
+    name: 'Alloy (OpenAI Neural Voice)',
+    gender: 'female',
+    style: 'Balanced & Smooth',
+    accent: 'US English',
+    provider: 'OPENAI',
+    sampleText: 'Hello! I am Alloy, an OpenAI neural voice synthesized for high-quality video audio.',
+  },
+  {
+    id: 'nova',
+    name: 'Nova (OpenAI Warm Voice)',
+    gender: 'female',
+    style: 'Lively & Warm',
+    accent: 'US English',
+    provider: 'OPENAI',
+    sampleText: 'Welcome! Nova voice narration brings a warm and human touch to your video stories.',
+  },
+  {
+    id: 'onyx',
+    name: 'Onyx (OpenAI Deep Voice)',
+    gender: 'male',
+    style: 'Deep & Authoritative',
+    accent: 'US English',
+    provider: 'OPENAI',
+    sampleText: 'Onyx delivers deep resonant voiceovers ideal for tech documentaries and tutorials.',
+  },
+];
+
 interface VoicePreviewPlayerProps {
   selectedVoiceId?: string;
   onSelectVoice?: (voiceId: string) => void;
@@ -21,7 +123,7 @@ interface VoicePreviewPlayerProps {
 }
 
 export function VoicePreviewPlayer({ selectedVoiceId, onSelectVoice, compact = false }: VoicePreviewPlayerProps) {
-  const [voices, setVoices] = useState<VoiceOption[]>([]);
+  const [voices, setVoices] = useState<VoiceOption[]>(DEFAULT_VOICES);
   const [currentVoiceId, setCurrentVoiceId] = useState<string>(selectedVoiceId || 'en_US-lessac-medium');
   const [isPlaying, setIsPlaying] = useState(false);
   const [loadingAudio, setLoadingAudio] = useState(false);
@@ -41,21 +143,15 @@ export function VoicePreviewPlayer({ selectedVoiceId, onSelectVoice, compact = f
   const fetchVoices = async () => {
     try {
       const res = await api.get('/voice/voices');
-      setVoices(res.data || []);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setVoices(res.data);
+      }
     } catch (err) {
-      console.error('Failed to fetch voice catalog:', err);
+      console.error('Using default voice catalog:', err);
     }
   };
 
-  const activeVoice = voices.find((v) => v.id === currentVoiceId) || {
-    id: 'en_US-lessac-medium',
-    name: 'Lessac (Studio Narrator)',
-    gender: 'male',
-    style: 'Professional & Authoritative',
-    accent: 'US English',
-    provider: 'PIPER',
-    sampleText: 'Welcome to your AI Content Factory. This is a preview of the Lessac studio voice narration.',
-  };
+  const activeVoice = voices.find((v) => v.id === currentVoiceId) || DEFAULT_VOICES[0];
 
   const handlePlayPreview = async () => {
     if (isPlaying && audioRef.current) {

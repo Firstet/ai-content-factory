@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shell } from '@/components/layout/Shell';
-import { Sparkles, Play, Globe, Clock, MessageSquare, Layers } from 'lucide-react';
+import { Sparkles, Play, Globe, Clock, MessageSquare, Layers, Volume2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { DEFAULT_VOICES } from '@/components/common/VoicePreviewPlayer';
 
 export default function NewContentPage() {
   const [topic, setTopic] = useState('');
@@ -14,6 +15,7 @@ export default function NewContentPage() {
   const [targetAudience, setTargetAudience] = useState('Tech-savvy professionals & AI enthusiasts');
   const [language, setLanguage] = useState('English');
   const [tone, setTone] = useState('Engaging, educational, and high-energy');
+  const [voiceId, setVoiceId] = useState('en_US-lessac-medium');
   const [brands, setBrands] = useState<any[]>([]);
   const [channels, setChannels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -161,6 +163,24 @@ export default function NewContentPage() {
                 <option value="French">French</option>
                 <option value="German">German</option>
                 <option value="Japanese">Japanese</option>
+              </select>
+            </div>
+
+            {/* Voice Narrator Selector */}
+            <div className="md:col-span-2">
+              <label className="block font-semibold text-slate-300 mb-2 flex items-center gap-1.5">
+                <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> Voice Narrator (Piper TTS & AI Studio Voices)
+              </label>
+              <select
+                value={voiceId}
+                onChange={(e) => setVoiceId(e.target.value)}
+                className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-emerald-300 font-extrabold focus:outline-none focus:border-emerald-500"
+              >
+                {DEFAULT_VOICES.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    🎙️ {v.name} — {v.accent} ({v.style})
+                  </option>
+                ))}
               </select>
             </div>
           </div>
