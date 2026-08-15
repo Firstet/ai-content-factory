@@ -97,8 +97,9 @@ export default function CreatorSettingsPage() {
   const { success, error } = useToast();
   const [activeTab, setActiveTab] = useState<'API_KEYS' | 'TASK_ASSIGNMENTS' | 'PUBLISHING' | 'BRANDING'>('API_KEYS');
 
-  // API Key Vault State
+  // API Key Vault & Provider State
   const [keys, setKeys] = useState<any[]>([]);
+  const [dbProviders, setDbProviders] = useState<any[]>([]);
   const [loadingKeys, setLoadingKeys] = useState(true);
   const [selectedProviderName, setSelectedProviderName] = useState('NVIDIA');
   const [label, setLabel] = useState('NVIDIA NIM Key');
@@ -139,7 +140,7 @@ export default function CreatorSettingsPage() {
     }
   }, [selectedProviderName]);
 
-  // Load Configured Keys on Mount
+  // Load Configured Keys & Providers on Mount
   useEffect(() => {
     loadKeyVault();
   }, []);
@@ -147,9 +148,15 @@ export default function CreatorSettingsPage() {
   const loadKeyVault = async () => {
     setLoadingKeys(true);
     try {
-      const res = await api.get('/api-keys');
-      const fetchedKeys = res.data || [];
+      const [keysRes, provRes] = await Promise.all([
+        api.get('/api-keys').catch(() => ({ data: [] })),
+        api.get('/providers').catch(() => ({ data: [] })),
+      ]);
+
+      const fetchedKeys = keysRes.data || [];
+      const fetchedProviders = provRes.data || [];
       setKeys(fetchedKeys);
+      setDbProviders(fetchedProviders);
 
       // If user has saved keys, auto-assign first key to unassigned tasks
       if (fetchedKeys.length > 0) {
@@ -379,6 +386,81 @@ export default function CreatorSettingsPage() {
         {/* TAB 1: API KEYS & VAULT */}
         {activeTab === 'API_KEYS' && (
           <div className="space-y-6">
+            {/* Added & Supported AI Providers Catalog */}
+            <div className="glass-panel p-6 rounded-3xl border border-white/10 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <div>
+                  <h2 className="text-base font-black text-white flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-400" />
+                    Added & Supported AI Providers ({dbProviders.length || DEFAULT_PROVIDERS.length})
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Operational status of all AI text, image, and voice providers integrated into your Studio.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                  AUTO-DETECTED
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                {(dbProviders.length > 0 ? dbProviders : DEFAULT_PROVIDERS).map((p) => {
+                  const pName = p.name || p.displayName;
+                  const matchingKeys = keys.filter(
+                    (k) => k.provider?.name === p.name || k.providerId === p.name || k.providerId === p.id
+                  );
+                  const isNvidia = pName.includes('NVIDIA');
+                  const isFreeEngine = pName.includes('Pollinations') || pName.includes('Piper') || pName.includes('Ollama');
+                  const isSelected = selectedProviderName === p.name;
+
+                  return (
+                    <div
+                      key={p.id || p.name}
+                      onClick={() => setSelectedProviderName(p.name)}
+                      className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-3 ${
+                        isSelected
+                          ? 'bg-indigo-950/40 border-indigo-500 shadow-lg shadow-indigo-500/10'
+                          : 'bg-slate-900/60 border-white/5 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-white text-xs truncate max-w-[130px]">
+                          {p.displayName || p.name}
+                        </span>
+                        {matchingKeys.length > 0 ? (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            {matchingKeys.length} KEY ACTIVE
+                          </span>
+                        ) : isFreeEngine || isNvidia ? (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            100% FREE
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-800 text-slate-400 border border-slate-700">
+                            READY TO ADD
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-[10px] text-slate-400 font-mono truncate">
+                        {p.defaultBaseUrl || p.baseUrl || 'https://integrate.api.nvidia.com/v1'}
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px]">
+                        <span className="text-slate-400 font-bold">
+                          {p.capabilities ? p.capabilities.join(' • ') : 'LLM • Text'}
+                        </span>
+                        <span className="text-indigo-400 font-bold group-hover:underline">
+                          {isSelected ? 'Selected' : 'Select'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Add API Key Form */}
             <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2">
