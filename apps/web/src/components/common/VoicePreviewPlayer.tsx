@@ -147,24 +147,86 @@ export function VoicePreviewPlayer({ selectedVoiceId, onSelectVoice, compact = f
         setVoices(res.data);
       }
     } catch (err) {
-      console.error('Using default voice catalog:', err);
+      console.warn('Using default studio voices catalog');
     }
   };
 
   const activeVoice = voices.find((v) => v.id === currentVoiceId) || DEFAULT_VOICES[0];
 
   const handlePlayPreview = async () => {
-    if (isPlaying && audioRef.current) {
-      audioRef.current.pause();
+    if (isPlaying) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       setIsPlaying(false);
       return;
     }
 
     setLoadingAudio(true);
+    const textToRead = customText || activeVoice.sampleText;
+
+    // 1. Try Browser Web Speech API for instant, crystal-clear speech synthesis
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(textToRead);
+
+        // Customize voice pitch and rate
+        if (activeVoice.gender === 'female') {
+          utterance.pitch = 1.25;
+          utterance.rate = 1.05;
+        } else if (activeVoice.id.includes('danny') || activeVoice.id === 'onyx') {
+          utterance.pitch = 0.8;
+          utterance.rate = 0.95;
+        } else {
+          utterance.pitch = 1.0;
+          utterance.rate = 1.0;
+        }
+
+        const browserVoices = window.speechSynthesis.getVoices();
+        const matchingVoice = browserVoices.find((v) =>
+          activeVoice.accent.includes('British') ? v.lang.startsWith('en-GB') : v.lang.startsWith('en-US')
+        );
+        if (matchingVoice) utterance.voice = matchingVoice;
+
+        utterance.onstart = () => {
+          setLoadingAudio(false);
+          setIsPlaying(true);
+        };
+
+        utterance.onend = () => {
+          setIsPlaying(false);
+        };
+
+        utterance.onerror = (e) => {
+          console.warn('[VoicePreview] WebSpeech error, falling back to server stream:', e);
+          playServerStreamFallback(textToRead);
+        };
+
+        window.speechSynthesis.speak(utterance);
+        // Fallback safety timeout if onstart event is delayed
+        setTimeout(() => {
+          setLoadingAudio(false);
+          setIsPlaying(true);
+        }, 300);
+        return;
+      } catch (err) {
+        console.warn('[VoicePreview] WebSpeech initialization failed:', err);
+      }
+    }
+
+    // 2. Fallback to Server Audio Stream Endpoint
+    playServerStreamFallback(textToRead);
+  };
+
+  const playServerStreamFallback = (textToRead: string) => {
     try {
-      const previewUrl = `/api/voice/preview?voiceId=${encodeURIComponent(currentVoiceId)}${
-        customText ? `&text=${encodeURIComponent(customText)}` : ''
-      }&t=${Date.now()}`;
+      const previewUrl = `/api/voice/preview?voiceId=${encodeURIComponent(currentVoiceId)}&text=${encodeURIComponent(
+        textToRead,
+      )}&t=${Date.now()}`;
 
       if (audioRef.current) {
         audioRef.current.pause();
@@ -175,7 +237,7 @@ export function VoicePreviewPlayer({ selectedVoiceId, onSelectVoice, compact = f
 
       newAudio.oncanplaythrough = () => {
         setLoadingAudio(false);
-        newAudio.play();
+        newAudio.play().catch(() => setLoadingAudio(false));
         setIsPlaying(true);
       };
 
@@ -184,12 +246,20 @@ export function VoicePreviewPlayer({ selectedVoiceId, onSelectVoice, compact = f
       };
 
       newAudio.onerror = (e) => {
-        console.error('Audio playback error:', e);
+        console.error('[VoicePreview] Audio stream element error:', e);
         setLoadingAudio(false);
         setIsPlaying(false);
       };
+
+      newAudio.play().then(() => {
+        setLoadingAudio(false);
+        setIsPlaying(true);
+      }).catch((e) => {
+        console.warn('[VoicePreview] Autoplay blocked, user interaction required:', e);
+        setLoadingAudio(false);
+      });
     } catch (err) {
-      console.error('Failed to stream audio preview:', err);
+      console.error('[VoicePreview] Failed to initialize audio stream:', err);
       setLoadingAudio(false);
       setIsPlaying(false);
     }
@@ -198,8 +268,13 @@ export function VoicePreviewPlayer({ selectedVoiceId, onSelectVoice, compact = f
   const handleVoiceChange = (vId: string) => {
     setCurrentVoiceId(vId);
     if (onSelectVoice) onSelectVoice(vId);
-    if (isPlaying && audioRef.current) {
-      audioRef.current.pause();
+    if (isPlaying) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       setIsPlaying(false);
     }
   };
