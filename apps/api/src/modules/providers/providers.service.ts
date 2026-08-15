@@ -1,9 +1,13 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CryptoService } from '../../common/crypto/crypto.service';
 
 @Injectable()
 export class ProvidersService implements OnModuleInit {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private crypto: CryptoService,
+  ) {}
 
   async onModuleInit() {
     await this.ensureDefaultProviders();
@@ -35,14 +39,11 @@ export class ProvidersService implements OnModuleInit {
       if (keyCount === 0) {
         const nvidiaProvider = await this.prisma.provider.findFirst({ where: { name: 'NVIDIA' } });
         if (nvidiaProvider) {
-          // Import CryptoService or simple mock encryption for seeding
-          const { CryptoService } = await import('../../common/crypto/crypto.service');
-          const crypto = new CryptoService();
           await this.prisma.apiKey.create({
             data: {
               providerId: nvidiaProvider.id,
               label: 'NVIDIA NIM Free Trial Key',
-              encryptedKey: crypto.encrypt('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'),
+              encryptedKey: this.crypto.encrypt('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'),
               platform: 'https://integrate.api.nvidia.com/v1|model:nvidia/nvidia-nemotron-nano-9b-v2|task:ALL_IN_ONE',
               keyType: 'api',
             },
