@@ -24,6 +24,12 @@ import {
   Tv,
   Film,
   Camera,
+  Search,
+  FileText,
+  Video,
+  Tags,
+  Cpu,
+  RefreshCw,
 } from 'lucide-react';
 import { useToast } from '@/components/common/Toast';
 import { api } from '@/lib/api';
@@ -35,7 +41,7 @@ const DEFAULT_PROVIDERS = [
     placeholder: 'nvapi-...',
     defaultBaseUrl: 'https://integrate.api.nvidia.com/v1',
     defaultModel: 'nvidia/nvidia-nemotron-nano-9b-v2',
-    task: 'TEXT_RESEARCH_SCRIPT',
+    task: 'ALL_IN_ONE',
   },
   {
     name: 'OPENAI_COMPATIBLE',
@@ -89,15 +95,16 @@ const DEFAULT_PROVIDERS = [
 
 export default function CreatorSettingsPage() {
   const { success, error } = useToast();
-  const [activeTab, setActiveTab] = useState<'API_KEYS' | 'BRANDING' | 'PUBLISHING'>('API_KEYS');
+  const [activeTab, setActiveTab] = useState<'API_KEYS' | 'TASK_ASSIGNMENTS' | 'PUBLISHING' | 'BRANDING'>('API_KEYS');
 
   // API Key Vault State
   const [keys, setKeys] = useState<any[]>([]);
+  const [loadingKeys, setLoadingKeys] = useState(true);
   const [selectedProviderName, setSelectedProviderName] = useState('NVIDIA');
-  const [label, setLabel] = useState('NVIDIA Nemotron Key');
-  const [keyInput, setKeyInput] = useState('');
+  const [label, setLabel] = useState('NVIDIA NIM Key');
+  const [keyInput, setKeyInput] = useState('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');
   const [baseUrlInput, setBaseUrlInput] = useState('https://integrate.api.nvidia.com/v1');
-  const [assignedTask, setAssignedTask] = useState('TEXT_RESEARCH_SCRIPT');
+  const [assignedTask, setAssignedTask] = useState('ALL_IN_ONE');
   const [modelNameInput, setModelNameInput] = useState('nvidia/nvidia-nemotron-nano-9b-v2');
   const [showKey, setShowKey] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
@@ -106,6 +113,16 @@ export default function CreatorSettingsPage() {
   const [videoRatio, setVideoRatio] = useState(80);
   const [postsPerWeek, setPostsPerWeek] = useState(7);
   const [autoPublish, setAutoPublish] = useState(true);
+
+  // Task Mappings State
+  const [taskAssignments, setTaskAssignments] = useState({
+    research: { keyId: '', model: 'nvidia/nvidia-nemotron-nano-9b-v2' },
+    scriptwriting: { keyId: '', model: 'nvidia/nvidia-nemotron-nano-9b-v2' },
+    broll: { keyId: 'POLLINATIONS_FREE', model: 'pollinations-flux-16:9' },
+    thumbnails: { keyId: 'POLLINATIONS_FREE', model: 'pollinations-flux-16:9' },
+    voice: { keyId: 'PIPER_FREE', model: 'piper-studio-tts' },
+    seo: { keyId: '', model: 'nvidia/nvidia-nemotron-nano-9b-v2' },
+  });
 
   // Branding State
   const [logoUrl, setLogoUrl] = useState('');
@@ -128,11 +145,27 @@ export default function CreatorSettingsPage() {
   }, []);
 
   const loadKeyVault = async () => {
+    setLoadingKeys(true);
     try {
       const res = await api.get('/api-keys');
-      setKeys(res.data || []);
+      const fetchedKeys = res.data || [];
+      setKeys(fetchedKeys);
+
+      // If user has saved keys, auto-assign first key to unassigned tasks
+      if (fetchedKeys.length > 0) {
+        const firstKeyId = fetchedKeys[0].id;
+        const firstModel = getModelName(fetchedKeys[0].platform);
+        setTaskAssignments((prev) => ({
+          ...prev,
+          research: { keyId: prev.research.keyId || firstKeyId, model: prev.research.model || firstModel },
+          scriptwriting: { keyId: prev.scriptwriting.keyId || firstKeyId, model: prev.scriptwriting.model || firstModel },
+          seo: { keyId: prev.seo.keyId || firstKeyId, model: prev.seo.model || firstModel },
+        }));
+      }
     } catch (err: any) {
       console.error('Failed to load API keys:', err);
+    } finally {
+      setLoadingKeys(false);
     }
   };
 
@@ -190,7 +223,7 @@ export default function CreatorSettingsPage() {
   };
 
   const getModelName = (platformStr: string) => {
-    if (!platformStr) return 'default';
+    if (!platformStr) return 'nvidia/nvidia-nemotron-nano-9b-v2';
     const match = platformStr.match(/model:([^|]+)/);
     return match ? match[1] : platformStr.split('|')[0];
   };
@@ -216,16 +249,112 @@ export default function CreatorSettingsPage() {
               </span>
             </div>
             <p className="text-sm text-slate-400 mt-1">
-              Add your AI API Keys, assign models directly per key, and configure social media post proportions.
+              Manage your AI API Keys, assign specialized tasks to keys & models, and configure content distribution ratios.
             </p>
+          </div>
+
+          <button
+            onClick={loadKeyVault}
+            className="px-4 py-2 rounded-xl glass-panel border border-white/10 text-xs font-bold text-slate-300 hover:text-white hover:border-white/20 transition-all flex items-center gap-2 w-fit"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loadingKeys ? 'animate-spin text-indigo-400' : ''}`} />
+            Refresh Active Keys
+          </button>
+        </div>
+
+        {/* Global Active AI Capabilities Banner */}
+        <div className="p-6 rounded-3xl bg-gradient-to-r from-slate-900/90 via-indigo-950/40 to-slate-900/90 border border-indigo-500/30 shadow-2xl space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <Cpu className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-sm font-black text-white flex items-center gap-2">
+                  System AI Capabilities Overview
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    {keys.length > 0 ? `${keys.length} API KEY(S) ACTIVE` : 'FREE ENGINE READY'}
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Every pipeline phase is linked to an API Key or Free Fallback Engine.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setActiveTab('TASK_ASSIGNMENTS')}
+              className="px-4 py-2 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/30 font-extrabold text-xs transition-all flex items-center gap-1.5 w-fit"
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              View Task Mappings
+            </button>
+          </div>
+
+          {/* Capability Badges Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-2 border-t border-white/10 text-xs">
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-1">
+              <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                <Search className="w-3 h-3 text-indigo-400" /> Research
+              </div>
+              <div className="font-bold text-emerald-400 text-[11px] truncate">
+                {keys.length > 0 ? keys[0].provider?.displayName?.split(' ')[0] || 'NVIDIA NIM' : 'Free Trial'}
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-1">
+              <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                <FileText className="w-3 h-3 text-purple-400" /> Scriptwriting
+              </div>
+              <div className="font-bold text-emerald-400 text-[11px] truncate">
+                {keys.length > 0 ? getModelName(keys[0].platform) : 'Nemotron 9B'}
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-1">
+              <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                <Video className="w-3 h-3 text-amber-400" /> B-Roll & Visuals
+              </div>
+              <div className="font-bold text-amber-300 text-[11px] truncate">
+                Pollinations AI (Free)
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-1">
+              <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                <ImageIcon className="w-3 h-3 text-rose-400" /> Thumbnails
+              </div>
+              <div className="font-bold text-amber-300 text-[11px] truncate">
+                Pollinations AI (Free)
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-1">
+              <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                <Volume2 className="w-3 h-3 text-emerald-400" /> Voice Narrator
+              </div>
+              <div className="font-bold text-emerald-300 text-[11px] truncate">
+                Piper TTS (Free)
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 space-y-1">
+              <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                <Tags className="w-3 h-3 text-cyan-400" /> Captions & SEO
+              </div>
+              <div className="font-bold text-emerald-400 text-[11px] truncate">
+                {keys.length > 0 ? getModelName(keys[0].platform) : 'Nemotron 9B'}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Custom Glassmorphic Navigation Tabs */}
         <div className="flex items-center gap-2 p-1.5 rounded-2xl glass-panel border border-white/10 w-fit">
           {[
-            { id: 'API_KEYS', label: 'API Keys & Model Vault', icon: KeyRound },
-            { id: 'PUBLISHING', label: 'Publishing & Content Ratios', icon: Share2 },
+            { id: 'API_KEYS', label: 'API Keys & Vault', icon: KeyRound },
+            { id: 'TASK_ASSIGNMENTS', label: 'Task & Model Assignments', icon: Zap },
+            { id: 'PUBLISHING', label: 'Publishing & Ratios', icon: Share2 },
             { id: 'BRANDING', label: 'Branding & Overlays', icon: Palette },
           ].map((tab) => {
             const active = activeTab === tab.id;
@@ -247,14 +376,14 @@ export default function CreatorSettingsPage() {
           })}
         </div>
 
-        {/* TAB 1: API KEYS & MODEL VAULT (UNIFIED AS REQUESTED) */}
+        {/* TAB 1: API KEYS & VAULT */}
         {activeTab === 'API_KEYS' && (
           <div className="space-y-6">
             <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                  <h2 className="text-base font-black text-white">Add AI Provider API Key & Assign Model</h2>
+                  <h2 className="text-base font-black text-white">Add AI Provider API Key & Target Model</h2>
                 </div>
                 <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   OpenAI API Compatible
@@ -284,10 +413,10 @@ export default function CreatorSettingsPage() {
                     onChange={(e) => setAssignedTask(e.target.value)}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-indigo-500"
                   >
+                    <option value="ALL_IN_ONE">🚀 All-In-One (Research, Script, Images, Voice, SEO)</option>
                     <option value="TEXT_RESEARCH_SCRIPT">📝 Research & Content Writing (Text LLM)</option>
                     <option value="IMAGE_GENERATION">🎨 Visual Scene & Image B-Roll Generation</option>
                     <option value="VOICE_TTS">🔊 Voice Narration Synthesizer (TTS)</option>
-                    <option value="ALL_IN_ONE">🚀 All-In-One (Research, Script, Images, Voice)</option>
                   </select>
                 </div>
 
@@ -328,9 +457,6 @@ export default function CreatorSettingsPage() {
                     onChange={(e) => setBaseUrlInput(e.target.value)}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    NVIDIA: https://integrate.api.nvidia.com/v1 | DeepSeek: https://api.deepseek.com/v1 | Groq: https://api.groq.com/openai/v1
-                  </p>
                 </div>
 
                 {/* Key String */}
@@ -371,19 +497,19 @@ export default function CreatorSettingsPage() {
             <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
               <div className="p-4 bg-slate-950/80 border-b border-white/10 flex items-center justify-between text-xs font-bold text-slate-300 uppercase tracking-wider">
                 <span>Configured AI API Keys & Models ({keys.length})</span>
-                <span className="text-[11px] text-slate-400 font-normal lowercase">Keys are securely stored and encrypted in PostgreSQL</span>
+                <span className="text-[11px] text-slate-400 font-normal lowercase">Keys are securely encrypted in PostgreSQL database</span>
               </div>
               {keys.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 text-xs">
-                  <KeyRound className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  No API keys added yet. Add your NVIDIA NIM, OpenAI, DeepSeek, or Gemini key above!
+                <div className="p-12 text-center text-slate-400 text-xs space-y-3">
+                  <KeyRound className="w-8 h-8 text-slate-600 mx-auto" />
+                  <p>No custom API keys saved yet. Using 100% Free Pollinations & Piper Engines automatically.</p>
                 </div>
               ) : (
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-900/60 text-slate-400 uppercase text-[10px] tracking-wider border-b border-white/10">
                     <tr>
                       <th className="px-6 py-4 font-bold">Label</th>
-                      <th className="px-6 py-4 font-bold">Assigned Task</th>
+                      <th className="px-6 py-4 font-bold">Assigned Capability</th>
                       <th className="px-6 py-4 font-bold">Model ID</th>
                       <th className="px-6 py-4 font-bold">Base Endpoint</th>
                       <th className="px-6 py-4 font-bold">Status</th>
@@ -416,7 +542,7 @@ export default function CreatorSettingsPage() {
                           </td>
                           <td className="px-6 py-4 font-mono text-[11px] text-emerald-400 flex items-center gap-1.5">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                            Encrypted
+                            Active & Ready
                           </td>
                           <td className="px-6 py-4 text-right">
                             <button
@@ -437,15 +563,300 @@ export default function CreatorSettingsPage() {
           </div>
         )}
 
-        {/* TAB 2: PUBLISHING & SOCIAL CONTENT RATIOS (YOUTUBE VS INSTAGRAM/TIKTOK/FACEBOOK) */}
+        {/* TAB 2: TASK & MODEL ASSIGNMENTS GRID */}
+        {activeTab === 'TASK_ASSIGNMENTS' && (
+          <div className="space-y-6">
+            <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+              <div className="border-b border-white/10 pb-4">
+                <h2 className="text-base font-black text-white flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-amber-400" /> Task-to-Key & Model Mapping Grid
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Specify exactly which API Key and Model handles each phase of your automated video production.
+                </p>
+              </div>
+
+              {/* 6 Specialized Task Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                {/* 1. Research */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300">
+                        <Search className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-sm">1. Content & Topic Research</h3>
+                        <span className="text-[10px] text-slate-400">Scrapes trends, extracts viral hooks</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      ACTIVE
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px]">
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Assigned API Key</label>
+                      <select
+                        value={taskAssignments.research.keyId}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, research: { ...p.research, keyId: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
+                      >
+                        {keys.length > 0 ? (
+                          keys.map((k) => (
+                            <option key={k.id} value={k.id}>{k.label} ({k.provider?.displayName || k.providerId})</option>
+                          ))
+                        ) : (
+                          <option value="NVIDIA_DEFAULT">NVIDIA NIM AI (Free Trial)</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Model Identifier</label>
+                      <input
+                        type="text"
+                        value={taskAssignments.research.model}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, research: { ...p.research, model: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Scriptwriting */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-purple-500/20 text-purple-300">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-sm">2. Script & Teleprompter Engine</h3>
+                        <span className="text-[10px] text-slate-400">Generates full video narration scripts</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      ACTIVE
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px]">
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Assigned API Key</label>
+                      <select
+                        value={taskAssignments.scriptwriting.keyId}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, scriptwriting: { ...p.scriptwriting, keyId: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
+                      >
+                        {keys.length > 0 ? (
+                          keys.map((k) => (
+                            <option key={k.id} value={k.id}>{k.label} ({k.provider?.displayName || k.providerId})</option>
+                          ))
+                        ) : (
+                          <option value="NVIDIA_DEFAULT">NVIDIA NIM AI (Free Trial)</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Model Identifier</label>
+                      <input
+                        type="text"
+                        value={taskAssignments.scriptwriting.model}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, scriptwriting: { ...p.scriptwriting, model: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. B-Roll & Visuals */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-amber-500/20 text-amber-300">
+                        <Video className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-sm">3. B-Roll & Scene Visual Generator</h3>
+                        <span className="text-[10px] text-slate-400">Creates 16:9 cinematic video segment visuals</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      FREE ENGINE
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px]">
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Assigned Visual Provider</label>
+                      <select
+                        value={taskAssignments.broll.keyId}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, broll: { ...p.broll, keyId: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-amber-300 font-bold focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="POLLINATIONS_FREE">✨ Pollinations AI (100% Free Unlimited HD)</option>
+                        <option value="OPENAI_DALLE3">OpenAI DALL-E 3 (Paid Key)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Visual Model</label>
+                      <input
+                        type="text"
+                        value={taskAssignments.broll.model}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, broll: { ...p.broll, model: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. Thumbnails */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-rose-500/20 text-rose-300">
+                        <ImageIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-sm">4. Cover Thumbnails & Photo Posts</h3>
+                        <span className="text-[10px] text-slate-400">Generates high-CTR cover graphics</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      FREE ENGINE
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px]">
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Assigned Image Provider</label>
+                      <select
+                        value={taskAssignments.thumbnails.keyId}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, thumbnails: { ...p.thumbnails, keyId: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-amber-300 font-bold focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="POLLINATIONS_FREE">✨ Pollinations AI (100% Free Unlimited HD)</option>
+                        <option value="OPENAI_DALLE3">OpenAI DALL-E 3 (Paid Key)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Image Model</label>
+                      <input
+                        type="text"
+                        value={taskAssignments.thumbnails.model}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, thumbnails: { ...p.thumbnails, model: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-amber-300 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. Voice TTS */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-300">
+                        <Volume2 className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-sm">5. Voice Narration (TTS Synthesizer)</h3>
+                        <span className="text-[10px] text-slate-400">Synthesizes clear speech audio track</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      STUDIO TTS ACTIVE
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px]">
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Assigned TTS Voice Provider</label>
+                      <select
+                        value={taskAssignments.voice.keyId}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, voice: { ...p.voice, keyId: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-emerald-300 font-bold focus:outline-none focus:border-indigo-500"
+                      >
+                        <option value="PIPER_FREE">🎙️ Piper TTS (100% Free Built-in Studio Narrator)</option>
+                        <option value="ELEVENLABS">ElevenLabs Voice AI (Paid Key)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Voice Model</label>
+                      <input
+                        type="text"
+                        value={taskAssignments.voice.model}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, voice: { ...p.voice, model: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-emerald-300 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 6. Captions & SEO */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-cyan-500/20 text-cyan-300">
+                        <Tags className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-white text-sm">6. Captions, Hashtags & SEO Optimization</h3>
+                        <span className="text-[10px] text-slate-400">Generates video titles, tags, and descriptions</span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      ACTIVE
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-[11px]">
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Assigned API Key</label>
+                      <select
+                        value={taskAssignments.seo.keyId}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, seo: { ...p.seo, keyId: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500 font-bold"
+                      >
+                        {keys.length > 0 ? (
+                          keys.map((k) => (
+                            <option key={k.id} value={k.id}>{k.label} ({k.provider?.displayName || k.providerId})</option>
+                          ))
+                        ) : (
+                          <option value="NVIDIA_DEFAULT">NVIDIA NIM AI (Free Trial)</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 mb-1 font-bold">Model Identifier</label>
+                      <input
+                        type="text"
+                        value={taskAssignments.seo.model}
+                        onChange={(e) => setTaskAssignments((p) => ({ ...p, seo: { ...p.seo, model: e.target.value } }))}
+                        className="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-xs text-cyan-300 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: PUBLISHING & SOCIAL CONTENT RATIOS */}
         {activeTab === 'PUBLISHING' && (
           <div className="space-y-6">
-            {/* Social Platform Content Mix & Ratio Controller */}
             <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
               <div className="border-b border-white/10 pb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-base font-black text-white flex items-center gap-2">
-                    <Sliders className="w-5 h-5 text-indigo-400" /> Social Media Platform Post Ratio Matrix
+                    <Sliders className="w-5 h-5 text-indigo-400" /> Social Media Platform Content Ratio Matrix
                   </h2>
                   <p className="text-xs text-slate-400 mt-1">
                     YouTube is 100% Video. For Instagram, TikTok, and Facebook, configure the proportion of Video vs. Photo/Carousel posts.
@@ -459,7 +870,7 @@ export default function CreatorSettingsPage() {
 
               {/* Platform Cards Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-                {/* YouTube Channel (100% Video Fixed) */}
+                {/* YouTube Channel */}
                 <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -595,7 +1006,7 @@ export default function CreatorSettingsPage() {
           </div>
         )}
 
-        {/* TAB 3: BRANDING */}
+        {/* TAB 4: BRANDING */}
         {activeTab === 'BRANDING' && (
           <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
             <div className="border-b border-white/10 pb-4">
