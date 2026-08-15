@@ -94,9 +94,14 @@ export default function CreatorSettingsPage() {
       success(`Saved API Key!`, `Successfully encrypted and saved ${selectedProviderName} key in database.`);
       loadKeyVault();
     } catch (err: any) {
-      const errorMsg = Array.isArray(err.response?.data?.message)
-        ? err.response.data.message.join(', ')
-        : err.response?.data?.message || 'Failed to save API key. Please check network connection.';
+      let errorMsg = 'Failed to save API key. Please check network connection.';
+      if (err.response?.data?.message) {
+        errorMsg = Array.isArray(err.response.data.message)
+          ? err.response.data.message.join(', ')
+          : err.response.data.message;
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
       error('API Key Save Failed', errorMsg);
     } finally {
       setSavingKey(false);
