@@ -59,6 +59,32 @@ export class ApiKeysService {
   }
 
   async findAll(providerId?: string) {
+    const keyCount = await this.prisma.apiKey.count();
+    if (keyCount === 0) {
+      let nvidiaProvider = await this.prisma.provider.findFirst({ where: { name: 'NVIDIA' } });
+      if (!nvidiaProvider) {
+        nvidiaProvider = await this.prisma.provider.create({
+          data: {
+            name: 'NVIDIA',
+            displayName: 'NVIDIA NIM AI',
+            enabled: true,
+            capabilities: ['llm', 'text', 'vision'],
+            preferredFor: ['script', 'research'],
+          },
+        });
+      }
+      await this.prisma.apiKey.create({
+        data: {
+          providerId: nvidiaProvider.id,
+          label: 'NVIDIA NIM Free Trial Key',
+          encryptedKey: this.crypto.encrypt('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'),
+          platform: 'https://integrate.api.nvidia.com/v1|model:nvidia/nvidia-nemotron-nano-9b-v2|task:ALL_IN_ONE',
+          keyType: 'api',
+        },
+      });
+      console.log('[ApiKeysService] Auto-seeded default NVIDIA API key into database.');
+    }
+
     return this.prisma.apiKey.findMany({
       where: providerId ? (isUuid(providerId) ? { providerId } : { provider: { name: providerId.toUpperCase() } }) : {},
       select: {
