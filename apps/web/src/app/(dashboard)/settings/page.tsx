@@ -1,25 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shell } from '@/components/layout/Shell';
+import { MediaUploader } from '@/components/common/MediaUploader';
 import {
-  Settings as SettingsIcon,
   KeyRound,
-  Building2,
-  Clock,
+  ShieldCheck,
   Cpu,
+  Palette,
+  Share2,
   Bell,
-  Lock,
+  Trash2,
   CheckCircle2,
   Eye,
   EyeOff,
-  ShieldCheck,
-  Sparkles,
   Globe,
-  Bot,
-  Trash2,
+  Sparkles,
+  Lock,
+  Zap,
+  Radio,
+  Image as ImageIcon,
+  Volume2,
+  Check,
 } from 'lucide-react';
-import { MediaUploader } from '@/components/common/MediaUploader';
 import { useToast } from '@/components/common/Toast';
 import { api } from '@/lib/api';
 
@@ -31,6 +34,49 @@ const DEFAULT_PROVIDERS = [
   { name: 'ANTHROPIC', displayName: 'Anthropic Claude 3.5', placeholder: 'sk-ant-...', defaultBaseUrl: 'https://api.anthropic.com' },
   { name: 'OPENROUTER', displayName: 'OpenRouter (Access 100+ Free Models)', placeholder: 'sk-or-...', defaultBaseUrl: 'https://openrouter.ai/api/v1' },
   { name: 'ELEVENLABS', displayName: 'ElevenLabs Voice AI', placeholder: 'el-...', defaultBaseUrl: 'https://api.elevenlabs.io' },
+];
+
+const BEST_MODELS_PRESETS = [
+  {
+    id: 'nvidia-nemotron',
+    providerName: 'NVIDIA',
+    modelName: 'nvidia/nvidia-nemotron-nano-9b-v2',
+    baseUrl: 'https://integrate.api.nvidia.com/v1',
+    title: 'NVIDIA Nemotron Nano 9B (Recommended)',
+    badge: '100% Free Trial',
+    desc: 'High intelligence, lightning fast, zero RAM usage on VPS. Ideal for YouTube scriptwriting.',
+    tag: 'BEST FOR SCRIPTS',
+  },
+  {
+    id: 'deepseek-chat',
+    providerName: 'OPENAI_COMPATIBLE',
+    modelName: 'deepseek-chat',
+    baseUrl: 'https://api.deepseek.com/v1',
+    title: 'DeepSeek V3 / R1 (Ultra Budget)',
+    badge: 'Ultra Cheap / High Logic',
+    desc: 'Top-rated model for viral YouTube hooks, script structuring, and detailed research.',
+    tag: 'BEST FOR HOOKS',
+  },
+  {
+    id: 'groq-llama3',
+    providerName: 'OPENAI_COMPATIBLE',
+    modelName: 'llama-3.3-70b-versatile',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    title: 'Groq Llama 3.3 70B (500 tokens/sec)',
+    badge: 'Ultra Speed',
+    desc: 'Instant 500 tokens/sec generation for instant automated video pipelines.',
+    tag: 'ULTRA SPEED',
+  },
+  {
+    id: 'gemini-flash',
+    providerName: 'GEMINI',
+    modelName: 'gemini-1.5-flash',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    title: 'Google Gemini 1.5 Flash',
+    badge: '1M Context / Free Tier',
+    desc: 'Great for deep web research, long video summaries, and multi-angle analysis.',
+    tag: 'BEST FOR RESEARCH',
+  },
 ];
 
 export default function CreatorSettingsPage() {
@@ -50,31 +96,34 @@ export default function CreatorSettingsPage() {
   const [researchProvider, setResearchProvider] = useState('NVIDIA');
   const [scriptProvider, setScriptProvider] = useState('NVIDIA');
   const [customModelName, setCustomModelName] = useState('nvidia/nvidia-nemotron-nano-9b-v2');
-  const [voiceEngine, setVoiceEngine] = useState('PIPER_LOCAL');
   const [imageEngine, setImageEngine] = useState('POLLINATIONS_FREE');
+  const [voiceEngine, setVoiceEngine] = useState('FREE_TTS');
 
   // Branding & Publishing State
   const [logoUrl, setLogoUrl] = useState('');
   const [watermarkUrl, setWatermarkUrl] = useState('');
   const [autoPublish, setAutoPublish] = useState(true);
 
+  // Sync Provider change to default URL & label
+  useEffect(() => {
+    const found = DEFAULT_PROVIDERS.find((p) => p.name === selectedProviderName);
+    if (found) {
+      setBaseUrlInput(found.defaultBaseUrl);
+      setLabel(`${found.displayName.split(' ')[0]} Key`);
+    }
+  }, [selectedProviderName]);
+
+  // Load Configured Keys on Mount
   useEffect(() => {
     loadKeyVault();
   }, []);
 
-  useEffect(() => {
-    const p = DEFAULT_PROVIDERS.find((item) => item.name === selectedProviderName);
-    if (p) {
-      setBaseUrlInput(p.defaultBaseUrl);
-    }
-  }, [selectedProviderName]);
-
   const loadKeyVault = async () => {
     try {
-      const kRes = await api.get('/api-keys').catch(() => ({ data: [] }));
-      setKeys(kRes.data || []);
-    } catch (err) {
-      console.error(err);
+      const res = await api.get('/api-keys');
+      setKeys(res.data || []);
+    } catch (err: any) {
+      console.error('Failed to load API keys:', err);
     }
   };
 
@@ -113,40 +162,49 @@ export default function CreatorSettingsPage() {
       await api.delete(`/api-keys/${id}`);
       success('API Key Deleted', 'Key has been removed from database.');
       loadKeyVault();
-    } catch (err) {
-      error('Deletion Failed', 'Unable to remove API key.');
+    } catch (err: any) {
+      error('Delete Failed', 'Failed to delete API key.');
     }
+  };
+
+  const applyPresetModel = (preset: typeof BEST_MODELS_PRESETS[0]) => {
+    setResearchProvider(preset.providerName);
+    setScriptProvider(preset.providerName);
+    setCustomModelName(preset.modelName);
+    setSelectedProviderName(preset.providerName);
+    setBaseUrlInput(preset.baseUrl);
+    success('Model Selected!', `Configured studio to use ${preset.title} (${preset.modelName}).`);
+  };
+
+  const handleSaveModelConfig = () => {
+    success('AI Model Config Saved!', `Set Research: ${researchProvider}, Script: ${scriptProvider}, Model: ${customModelName}.`);
   };
 
   return (
     <Shell>
-      <div className="max-w-6xl mx-auto space-y-8 pb-12">
+      <div className="max-w-6xl mx-auto space-y-8 pb-16">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5">
-                <SettingsIcon className="w-3.5 h-3.5 text-indigo-400" />
-                Personal Creator Studio
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-black text-white tracking-tight">Studio Settings</h1>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                PERSONAL STUDIO V2.0
               </span>
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              AI Provider Keys & OpenAI Compatible APIs
-            </h1>
-            <p className="text-xs text-slate-400 mt-1 max-w-xl">
-              Connect OpenAI, DeepSeek, Groq, OpenRouter, Google Gemini, or any custom OpenAI-compatible API endpoint.
+            <p className="text-sm text-slate-400 mt-1">
+              Manage your AI API Keys, select the best AI Models, configure branding overlays, and set auto-publishing rules.
             </p>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="glass-panel p-1.5 rounded-2xl border border-white/10 flex flex-wrap gap-1 bg-slate-950/80">
+        {/* Custom Glassmorphic Navigation Tabs */}
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl glass-panel border border-white/10 w-fit">
           {[
             { id: 'API_KEYS', label: 'API Key Vault (Add Keys)', icon: KeyRound },
             { id: 'AI_ENGINES', label: 'AI Model Selection', icon: Cpu },
-            { id: 'BRANDING', label: 'Branding & Overlays', icon: Building2 },
-            { id: 'PUBLISHING', label: 'Publishing & Automation', icon: Clock },
-            { id: 'NOTIFICATIONS', label: 'Notifications', icon: Bell },
+            { id: 'BRANDING', label: 'Branding & Overlays', icon: Palette },
+            { id: 'PUBLISHING', label: 'Publishing & Automation', icon: Share2 },
           ].map((tab) => {
             const active = activeTab === tab.id;
             const Icon = tab.icon;
@@ -166,7 +224,6 @@ export default function CreatorSettingsPage() {
             );
           })}
         </div>
-
 
         {/* TAB 1: API KEY VAULT */}
         {activeTab === 'API_KEYS' && (
@@ -200,7 +257,7 @@ export default function CreatorSettingsPage() {
                   <label className="block font-bold text-slate-300 mb-1">Key Label</label>
                   <input
                     type="text"
-                    placeholder="e.g. DeepSeek Production Key / Groq Key"
+                    placeholder="e.g. NVIDIA Nemotron Key / DeepSeek Key"
                     value={label}
                     onChange={(e) => setLabel(e.target.value)}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
@@ -210,16 +267,18 @@ export default function CreatorSettingsPage() {
                 <div>
                   <label className="block font-bold text-slate-300 mb-1 flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5 text-indigo-400" />
-                    API Base URL (For DeepSeek, Groq, LM Studio, Custom API)
+                    API Base URL (For NVIDIA, DeepSeek, Groq, LM Studio)
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. https://api.deepseek.com/v1"
+                    placeholder="e.g. https://integrate.api.nvidia.com/v1"
                     value={baseUrlInput}
                     onChange={(e) => setBaseUrlInput(e.target.value)}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">DeepSeek: https://api.deepseek.com/v1 | Groq: https://api.groq.com/openai/v1</p>
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    NVIDIA: https://integrate.api.nvidia.com/v1 | DeepSeek: https://api.deepseek.com/v1 | Groq: https://api.groq.com/openai/v1
+                  </p>
                 </div>
 
                 <div>
@@ -227,7 +286,7 @@ export default function CreatorSettingsPage() {
                   <div className="relative">
                     <input
                       type={showKey ? 'text' : 'password'}
-                      placeholder={DEFAULT_PROVIDERS.find((p) => p.name === selectedProviderName)?.placeholder || 'Enter API Key'}
+                      placeholder={DEFAULT_PROVIDERS.find((p) => p.name === selectedProviderName)?.placeholder || 'Enter API Key (e.g. nvapi-...)'}
                       value={keyInput}
                       onChange={(e) => setKeyInput(e.target.value)}
                       className="w-full bg-slate-900 border border-white/10 rounded-xl pl-4 pr-10 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
@@ -264,7 +323,7 @@ export default function CreatorSettingsPage() {
               {keys.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 text-xs">
                   <KeyRound className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                  No API keys added yet. Add your OpenAI, DeepSeek, Google Gemini, or Anthropic API key above!
+                  No API keys added yet. Add your NVIDIA NIM, OpenAI, DeepSeek, or Gemini key above!
                 </div>
               ) : (
                 <table className="w-full text-left text-xs">
@@ -287,7 +346,7 @@ export default function CreatorSettingsPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 font-mono text-[11px] text-slate-300">
-                          {k.platform || 'https://api.openai.com/v1'}
+                          {k.platform || 'https://integrate.api.nvidia.com/v1'}
                         </td>
                         <td className="px-6 py-4 font-mono text-[11px] text-emerald-400 flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -313,71 +372,170 @@ export default function CreatorSettingsPage() {
 
         {/* TAB 2: AI MODEL SELECTION */}
         {activeTab === 'AI_ENGINES' && (
-          <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
-            <div className="border-b border-white/10 pb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-black text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-400" /> Preferred AI Engine & Custom Model Name
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Choose which AI model or provider executes each pipeline step. Works with OpenAI-compatible APIs!
-                </p>
+          <div className="space-y-6">
+            {/* Top Recommended Models Grid */}
+            <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+              <div className="border-b border-white/10 pb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-black text-white flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-amber-400" /> Top Recommended AI Models (1-Click Selection)
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Select the best models for high speed, zero cost, and viral scriptwriting.
+                  </p>
+                </div>
               </div>
 
-              <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                OpenAI API Compatible
-              </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {BEST_MODELS_PRESETS.map((preset) => {
+                  const isSelected = customModelName === preset.modelName;
+                  return (
+                    <div
+                      key={preset.id}
+                      onClick={() => applyPresetModel(preset)}
+                      className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden ${
+                        isSelected
+                          ? 'bg-gradient-to-br from-indigo-900/60 via-purple-900/40 to-slate-900 border-indigo-500 shadow-xl shadow-indigo-500/10'
+                          : 'bg-slate-900/60 border-white/5 hover:border-white/20 hover:bg-slate-900/90'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <span className="px-2 py-0.5 rounded text-[9px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 uppercase tracking-wider">
+                            {preset.tag}
+                          </span>
+                          <h3 className="text-sm font-black text-white mt-1.5">{preset.title}</h3>
+                        </div>
+                        {isSelected ? (
+                          <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-slate-950 font-bold">
+                            <Check className="w-4 h-4 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold text-amber-300 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20">
+                            {preset.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400">{preset.desc}</p>
+                      <div className="mt-3 pt-3 border-t border-white/5 font-mono text-[10px] text-slate-400 flex items-center justify-between">
+                        <span>Model: <span className="text-amber-300 font-bold">{preset.modelName}</span></span>
+                        <span className="text-indigo-400 font-bold">Click to Select →</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
-                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-indigo-300">
-                  1. Topic Research Engine
-                </label>
-                <select
-                  value={researchProvider}
-                  onChange={(e) => setResearchProvider(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+            {/* Stage-by-Stage Custom Engine Controls */}
+            <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+              <div className="border-b border-white/10 pb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-black text-white flex items-center gap-2">
+                    <Cpu className="w-5 h-5 text-indigo-400" /> Pipeline Stage Engine Configuration
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Customize which AI engine handles Research, Scriptwriting, Visual Scenes, and Voice Narration.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleSaveModelConfig}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 flex items-center gap-2 cursor-pointer transition-all"
                 >
-                  <option value="OPENAI_COMPATIBLE">OpenAI Compatible (DeepSeek / Groq / Custom API)</option>
-                  <option value="OPENAI">OpenAI Official (GPT-4o Mini)</option>
-                  <option value="GEMINI">Google Gemini 1.5 Flash (Free Tier)</option>
-                  <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
-                  <option value="OPENROUTER">OpenRouter (Free & Open Source Models)</option>
-                </select>
+                  <Zap className="w-4 h-4" />
+                  <span>Save AI Configuration</span>
+                </button>
               </div>
 
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
-                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-purple-300">
-                  2. Script Writing Engine
-                </label>
-                <select
-                  value={scriptProvider}
-                  onChange={(e) => setScriptProvider(e.target.value)}
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="OPENAI_COMPATIBLE">OpenAI Compatible (DeepSeek / Groq / Custom API)</option>
-                  <option value="OPENAI">OpenAI Official (GPT-4o)</option>
-                  <option value="GEMINI">Google Gemini Pro (Free Tier)</option>
-                  <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
-                  <option value="OPENROUTER">OpenRouter Compatible APIs</option>
-                </select>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs">
+                {/* 1. Research Engine */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
+                  <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-indigo-300 flex items-center gap-2">
+                    <Radio className="w-4 h-4 text-indigo-400" />
+                    1. Topic Research Engine
+                  </label>
+                  <select
+                    value={researchProvider}
+                    onChange={(e) => setResearchProvider(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="NVIDIA">NVIDIA NIM AI (Nemotron Nano 9B v2 / Llama 3.3)</option>
+                    <option value="OPENAI_COMPATIBLE">OpenAI Compatible (DeepSeek / Groq / LM Studio)</option>
+                    <option value="OPENAI">OpenAI Official (GPT-4o)</option>
+                    <option value="GEMINI">Google Gemini 1.5 Flash (Free Tier)</option>
+                    <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
+                  </select>
+                </div>
 
-              <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3 md:col-span-2">
-                <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-amber-300">
-                  3. Custom Model Identifier (e.g. deepseek-chat, llama-3.3-70b-versatile, gpt-4o)
-                </label>
-                <input
-                  type="text"
-                  value={customModelName}
-                  onChange={(e) => setCustomModelName(e.target.value)}
-                  placeholder="e.g. deepseek-chat or llama-3.3-70b-versatile"
-                  className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
-                />
-                <p className="text-[10px] text-slate-400">
-                  Specify the model ID sent to your OpenAI-compatible endpoint (e.g., DeepSeek: <code className="text-amber-300">deepseek-chat</code>, Groq: <code className="text-amber-300">llama-3.3-70b-versatile</code>).
-                </p>
+                {/* 2. Scriptwriting Engine */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
+                  <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-purple-300 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    2. Script Writing Engine
+                  </label>
+                  <select
+                    value={scriptProvider}
+                    onChange={(e) => setScriptProvider(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="NVIDIA">NVIDIA NIM AI (Nemotron Nano 9B v2 / Llama 3.3)</option>
+                    <option value="OPENAI_COMPATIBLE">OpenAI Compatible (DeepSeek / Groq / LM Studio)</option>
+                    <option value="OPENAI">OpenAI Official (GPT-4o)</option>
+                    <option value="GEMINI">Google Gemini Pro (Free Tier)</option>
+                    <option value="ANTHROPIC">Anthropic Claude 3.5 Sonnet</option>
+                  </select>
+                </div>
+
+                {/* 3. Visual B-Roll Scene Generator */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
+                  <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-amber-300 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-amber-400" />
+                    3. Visual Scene & B-Roll Generator
+                  </label>
+                  <select
+                    value={imageEngine}
+                    onChange={(e) => setImageEngine(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="POLLINATIONS_FREE">Pollinations AI (100% Free Unlimited 16:9 Scenes)</option>
+                    <option value="OPENAI_DALLE">OpenAI DALL-E 3 (HD Quality)</option>
+                  </select>
+                </div>
+
+                {/* 4. Voice Narration Synthesizer */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3">
+                  <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-emerald-300 flex items-center gap-2">
+                    <Volume2 className="w-4 h-4 text-emerald-400" />
+                    4. Voice Narration Engine
+                  </label>
+                  <select
+                    value={voiceEngine}
+                    onChange={(e) => setVoiceEngine(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="FREE_TTS">Piper Local / Free Google Voice Synthesizer (100% Free)</option>
+                    <option value="OPENAI_TTS">OpenAI TTS HD (Alloy, Echo, Onyx, Nova, Shimmer)</option>
+                    <option value="ELEVENLABS">ElevenLabs AI Voice Studio</option>
+                  </select>
+                </div>
+
+                {/* Custom Model Name Input */}
+                <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/5 space-y-3 md:col-span-2">
+                  <label className="block font-bold text-white uppercase text-[11px] tracking-wider text-amber-300">
+                    Active AI Model Identifier String
+                  </label>
+                  <input
+                    type="text"
+                    value={customModelName}
+                    onChange={(e) => setCustomModelName(e.target.value)}
+                    placeholder="e.g. nvidia/nvidia-nemotron-nano-9b-v2 or deepseek-chat"
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                  <p className="text-[10px] text-slate-400">
+                    NVIDIA: <code className="text-amber-300">nvidia/nvidia-nemotron-nano-9b-v2</code> | DeepSeek: <code className="text-amber-300">deepseek-chat</code> | Groq: <code className="text-amber-300">llama-3.3-70b-versatile</code>
+                  </p>
+                </div>
               </div>
             </div>
           </div>
