@@ -12,24 +12,32 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   const destinationUrl = `${targetHost}/${pathString}${searchParams}`;
 
   try {
-    const headers = new Headers(request.headers);
-    headers.delete('host');
+    const headers = new Headers();
+    request.headers.forEach((value, key) => {
+      if (!['host', 'content-length'].includes(key.toLowerCase())) {
+        headers.set(key, value);
+      }
+    });
 
-    const body = ['GET', 'HEAD'].includes(request.method) ? undefined : await request.blob();
+    let body: ArrayBuffer | undefined = undefined;
+    if (!['GET', 'HEAD'].includes(request.method.toUpperCase())) {
+      body = await request.arrayBuffer();
+    }
 
     const response = await fetch(destinationUrl, {
       method: request.method,
       headers,
       body,
-      // @ts-ignore
-      duplex: 'half',
     });
 
     const data = await response.arrayBuffer();
 
-    const responseHeaders = new Headers(response.headers);
-    responseHeaders.delete('content-encoding');
-    responseHeaders.delete('transfer-encoding');
+    const responseHeaders = new Headers();
+    response.headers.forEach((value, key) => {
+      if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(key.toLowerCase())) {
+        responseHeaders.set(key, value);
+      }
+    });
 
     return new NextResponse(data, {
       status: response.status,

@@ -3,6 +3,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CryptoService } from '../../common/crypto/crypto.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 
+const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
 @Injectable()
 export class ApiKeysService {
   constructor(
@@ -18,24 +20,22 @@ export class ApiKeysService {
     try {
       const encryptedKey = this.crypto.encrypt(dto.key);
 
-      // Resolve provider by UUID or Name (e.g., OPENAI, GEMINI, NVIDIA)
+      // Safe provider lookup preventing invalid UUID cast errors in PostgreSQL
+      const providerName = dto.providerId.toUpperCase();
       let provider = await this.prisma.provider.findFirst({
-        where: {
-          OR: [
-            { id: dto.providerId },
-            { name: dto.providerId.toUpperCase() },
-          ],
-        },
+        where: isUuid(dto.providerId)
+          ? { OR: [{ id: dto.providerId }, { name: providerName }] }
+          : { name: providerName },
       });
 
       if (!provider) {
         provider = await this.prisma.provider.create({
           data: {
-            name: dto.providerId.toUpperCase(),
+            name: providerName,
             displayName: dto.providerId,
             enabled: true,
-            capabilities: [],
-            preferredFor: [],
+            capabilities: ['llm', 'text'],
+            preferredFor: ['script', 'research'],
           },
         });
       }
@@ -60,7 +60,7 @@ export class ApiKeysService {
 
   async findAll(providerId?: string) {
     return this.prisma.apiKey.findMany({
-      where: providerId ? { providerId } : {},
+      where: providerId ? (isUuid(providerId) ? { providerId } : { provider: { name: providerId.toUpperCase() } }) : {},
       select: {
         id: true,
         label: true,
