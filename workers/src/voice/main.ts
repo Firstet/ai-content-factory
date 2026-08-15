@@ -3,6 +3,7 @@
 // ============================================================
 import 'dotenv/config';
 import { Job } from 'bullmq';
+import axios from 'axios';
 import * as Minio from 'minio';
 import { createWorker, prisma, emitJobProgress, enqueueNextStep } from '../shared/worker.base';
 import { callSpeechProvider } from '../shared/ai-helper';
@@ -18,6 +19,17 @@ const minioClient = new Minio.Client({
 });
 
 const bucket = process.env.MINIO_BUCKET || 'acf-assets';
+
+async function generateFreeTTS(text: string): Promise<Buffer> {
+  // Truncate or chunk for Google TTS public API
+  const cleanText = text.substring(0, 1000);
+  const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=en&client=tw-ob`;
+  const res = await axios.get(ttsUrl, {
+    responseType: 'arraybuffer',
+    headers: { 'User-Agent': 'Mozilla/5.0' },
+  });
+  return Buffer.from(res.data);
+}
 
 createWorker(QUEUE_NAMES.VOICE, async (job: Job) => {
   const { videoId, brandId, metadata } = job.data;
@@ -36,24 +48,32 @@ createWorker(QUEUE_NAMES.VOICE, async (job: Job) => {
     scriptContent.callToAction,
   ].filter(Boolean).join('\n\n');
 
-  // Get TTS-capable provider
+  // Get active provider with API Key
   const provider = await prisma.provider.findFirst({
-    where: { enabled: true, capabilities: { has: 'SPEECH' } },
+    where: { enabled: true, apiKeys: { some: { isActive: true } } },
     include: { apiKeys: { where: { isActive: true }, take: 1 } },
   });
 
-  let audioBuffer: Buffer;
+  let audioBuffer: Buffer | null = null;
 
-  if (provider && provider.apiKeys.length > 0) {
-    await emitJobProgress(videoId, PipelineStep.VOICE, 20, `Generating voice with ${provider.displayName}...`);
-    const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
-    const voice = (provider.modelConfig as any)?.voice || 'alloy';
-    audioBuffer = await callSpeechProvider(provider.name, apiKey, fullText, voice);
-  } else {
-    throw new Error('No TTS provider available. Enable OpenAI in Admin → AI Providers.');
+  if (provider && provider.name === 'OPENAI' && provider.apiKeys.length > 0) {
+    try {
+      await emitJobProgress(videoId, PipelineStep.VOICE, 20, `Generating voice with ${provider.displayName}...`);
+      const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
+      const voice = (provider.modelConfig as any)?.voice || 'alloy';
+      audioBuffer = await callSpeechProvider(provider.name, apiKey, fullText, voice);
+    } catch (err: any) {
+      console.warn(`OpenAI Speech call warning: ${err.message}. Using free TTS fallback...`);
+    }
   }
 
-  await emitJobProgress(videoId, PipelineStep.VOICE, 70, 'Uploading audio...');
+  // Fallback to Free Voice TTS
+  if (!audioBuffer) {
+    await emitJobProgress(videoId, PipelineStep.VOICE, 30, 'Using free voice synthesis...');
+    audioBuffer = await generateFreeTTS(fullText);
+  }
+
+  await emitJobProgress(videoId, PipelineStep.VOICE, 70, 'Uploading audio narration...');
 
   // Upload to MinIO
   const key = `videos/${videoId}/voice/narration.mp3`;
@@ -75,7 +95,7 @@ createWorker(QUEUE_NAMES.VOICE, async (job: Job) => {
 
   await prisma.video.update({ where: { id: videoId }, data: { pipelineStep: PipelineStep.IMAGE } });
 
-  await emitJobProgress(videoId, PipelineStep.VOICE, 100, 'Voice done! Generating images...');
+  await emitJobProgress(videoId, PipelineStep.VOICE, 100, 'Voice complete! Generating scene visuals...');
 
   // Chain to image generation
   await enqueueNextStep(QUEUE_NAMES.IMAGE, videoId, brandId, 'image', { audioUrl, sections });
