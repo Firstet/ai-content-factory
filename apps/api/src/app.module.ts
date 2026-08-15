@@ -20,6 +20,7 @@ import { VideosModule } from './modules/videos/videos.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { HealthModule } from './modules/health/health.module';
 import { EventsModule } from './modules/events/events.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { VoiceModule } from './modules/voice/voice.module';
 import { QUEUE_NAMES } from '@acf/shared';
 
