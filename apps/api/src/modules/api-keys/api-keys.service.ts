@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CryptoService } from '../../common/crypto/crypto.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
@@ -15,42 +15,47 @@ export class ApiKeysService {
    * The raw key is NEVER returned after creation.
    */
   async create(dto: CreateApiKeyDto) {
-    const encryptedKey = this.crypto.encrypt(dto.key);
+    try {
+      const encryptedKey = this.crypto.encrypt(dto.key);
 
-    // Resolve provider by UUID or Name (e.g., OPENAI, GEMINI)
-    let provider = await this.prisma.provider.findFirst({
-      where: {
-        OR: [
-          { id: dto.providerId },
-          { name: dto.providerId.toUpperCase() },
-        ],
-      },
-    });
-
-    if (!provider) {
-      provider = await this.prisma.provider.create({
-        data: {
-          name: dto.providerId.toUpperCase(),
-          displayName: dto.providerId,
-          enabled: true,
-          capabilities: [],
-          preferredFor: [],
+      // Resolve provider by UUID or Name (e.g., OPENAI, GEMINI, NVIDIA)
+      let provider = await this.prisma.provider.findFirst({
+        where: {
+          OR: [
+            { id: dto.providerId },
+            { name: dto.providerId.toUpperCase() },
+          ],
         },
       });
+
+      if (!provider) {
+        provider = await this.prisma.provider.create({
+          data: {
+            name: dto.providerId.toUpperCase(),
+            displayName: dto.providerId,
+            enabled: true,
+            capabilities: [],
+            preferredFor: [],
+          },
+        });
+      }
+
+      const apiKey = await this.prisma.apiKey.create({
+        data: {
+          providerId: provider.id,
+          label: dto.label,
+          encryptedKey,
+          platform: dto.platform,
+          keyType: dto.keyType || 'api',
+        },
+        select: { id: true, label: true, providerId: true, isActive: true, createdAt: true },
+      });
+
+      return { ...apiKey, message: 'API key stored securely.' };
+    } catch (err: any) {
+      console.error('[ApiKeysService] Error creating API key:', err);
+      throw new BadRequestException(`Failed to save API key: ${err.message || 'Database error'}`);
     }
-
-    const apiKey = await this.prisma.apiKey.create({
-      data: {
-        providerId: provider.id,
-        label: dto.label,
-        encryptedKey,
-        platform: dto.platform,
-        keyType: dto.keyType || 'api',
-      },
-      select: { id: true, label: true, providerId: true, isActive: true, createdAt: true },
-    });
-
-    return { ...apiKey, message: 'API key stored securely.' };
   }
 
   async findAll(providerId?: string) {
