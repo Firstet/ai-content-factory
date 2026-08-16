@@ -40,20 +40,31 @@ export class PipelineService {
     let resolvedBrandId = dto.brandId;
 
     if (!resolvedBrandId) {
-      const existingBrand = await this.prisma.brand.findFirst({ where: { createdById } });
-      if (existingBrand) {
-        resolvedBrandId = existingBrand.id;
+      const user = await this.prisma.user.findUnique({ where: { id: createdById }, include: { brand: true } });
+      if (user?.brandId) {
+        resolvedBrandId = user.brandId;
       } else {
-        const defaultBrand = await this.prisma.brand.create({
-          data: {
-            name: 'Primary Studio Brand',
-            niche: 'General Content Studio',
-            voiceTone: 'High-energy, engaging, educational',
-            autoPilotEnabled: true,
-            createdById,
-          },
-        });
-        resolvedBrandId = defaultBrand.id;
+        const existingBrand = await this.prisma.brand.findFirst();
+        if (existingBrand) {
+          resolvedBrandId = existingBrand.id;
+        } else {
+          const defaultBrand = await this.prisma.brand.create({
+            data: {
+              name: 'Primary Studio Brand',
+              slug: 'primary-studio-brand-' + Date.now(),
+              niche: 'General Content Studio',
+              voiceTone: 'High-energy, engaging, educational',
+              autoPilotEnabled: true,
+            },
+          });
+          resolvedBrandId = defaultBrand.id;
+        }
+        if (user) {
+          await this.prisma.user.update({
+            where: { id: createdById },
+            data: { brandId: resolvedBrandId },
+          });
+        }
       }
     }
 
