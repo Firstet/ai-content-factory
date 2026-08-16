@@ -47,42 +47,48 @@ createWorker(QUEUE_NAMES.IMAGE, async (job: Job) => {
     let imageBuffer: Buffer | null = null;
 
     try {
-      if (provider && provider.name === 'OPENAI' && provider.apiKeys.length > 0) {
-        const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
-        const urls = await callImageProvider(provider.name, apiKey, prompt);
-        if (urls.length > 0) {
-          const imgResponse = await axios.get(urls[0], { responseType: 'arraybuffer' });
+      const seed = Math.floor(Math.random() * 1000000);
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1280&height=720&seed=${seed}&nologo=true`;
+      
+      let url = pollinationsUrl;
+      let key = `videos/${videoId}/images/scene-${i + 1}.jpg`;
+
+      try {
+        if (provider && provider.name === 'OPENAI' && provider.apiKeys.length > 0) {
+          const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
+          const urls = await callImageProvider(provider.name, apiKey, prompt);
+          if (urls.length > 0) {
+            const imgResponse = await axios.get(urls[0], { responseType: 'arraybuffer', timeout: 15000 });
+            imageBuffer = Buffer.from(imgResponse.data);
+          }
+        }
+
+        if (!imageBuffer) {
+          const imgResponse = await axios.get(pollinationsUrl, { responseType: 'arraybuffer', timeout: 15000 });
           imageBuffer = Buffer.from(imgResponse.data);
         }
+
+        if (imageBuffer) {
+          await minioClient.putObject(bucket, key, imageBuffer, imageBuffer.length, { 'Content-Type': 'image/jpeg' });
+          url = `http://${process.env.MINIO_ENDPOINT || 'localhost'}:${process.env.MINIO_PORT || '9000'}/${bucket}/${key}`;
+        }
+      } catch (uploadErr: any) {
+        console.warn(`MinIO storage unavailable, using direct Pollinations AI image URL: ${uploadErr.message}`);
       }
 
-      // Default 100% Free Fallback: Pollinations AI (Unlimited, High-Quality 16:9 Scenes)
-      if (!imageBuffer) {
-        const seed = Math.floor(Math.random() * 1000000);
-        const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1280&height=720&seed=${seed}&nologo=true`;
-        const imgResponse = await axios.get(pollinationsUrl, { responseType: 'arraybuffer', timeout: 15000 });
-        imageBuffer = Buffer.from(imgResponse.data);
-      }
+      imageUrls.push(url);
 
-      if (imageBuffer) {
-        const key = `videos/${videoId}/images/scene-${i + 1}.jpg`;
-        await minioClient.putObject(bucket, key, imageBuffer, imageBuffer.length, { 'Content-Type': 'image/jpeg' });
-
-        const url = `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}/${bucket}/${key}`;
-        imageUrls.push(url);
-
-        await prisma.asset.create({
-          data: {
-            videoId,
-            type: 'IMAGE',
-            url,
-            key,
-            mimeType: 'image/jpeg',
-            sizeBytes: BigInt(imageBuffer.length),
-            metadata: { sectionId: section.id, sectionIndex: i },
-          },
-        });
-      }
+      await prisma.asset.create({
+        data: {
+          videoId,
+          type: 'IMAGE',
+          url,
+          key,
+          mimeType: 'image/jpeg',
+          sizeBytes: BigInt(imageBuffer ? imageBuffer.length : 1024),
+          metadata: { sectionId: section.id, sectionIndex: i, prompt },
+        },
+      });
     } catch (err: any) {
       console.error(`Image generation warning for section ${i}: ${err.message}`);
     }
