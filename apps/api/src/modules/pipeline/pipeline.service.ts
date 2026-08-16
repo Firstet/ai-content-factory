@@ -37,12 +37,32 @@ export class PipelineService {
    * Creates the video record and kicks off the Research step.
    */
   async startPipeline(dto: StartPipelineDto, createdById: string) {
+    let resolvedBrandId = dto.brandId;
+
+    if (!resolvedBrandId) {
+      const existingBrand = await this.prisma.brand.findFirst({ where: { createdById } });
+      if (existingBrand) {
+        resolvedBrandId = existingBrand.id;
+      } else {
+        const defaultBrand = await this.prisma.brand.create({
+          data: {
+            name: 'Primary Studio Brand',
+            niche: 'General Content Studio',
+            voiceTone: 'High-energy, engaging, educational',
+            autoPilotEnabled: true,
+            createdById,
+          },
+        });
+        resolvedBrandId = defaultBrand.id;
+      }
+    }
+
     // 1. Create the video record
     const video = await this.prisma.video.create({
       data: {
         title: dto.topic,
         status: VideoStatus.PROCESSING,
-        brandId: dto.brandId,
+        brandId: resolvedBrandId,
         channelId: dto.channelId,
         createdById,
         pipelineStep: PipelineStep.RESEARCH,
@@ -57,7 +77,7 @@ export class PipelineService {
       'research',
       {
         videoId: video.id,
-        brandId: dto.brandId,
+        brandId: resolvedBrandId,
         channelId: dto.channelId,
         step: PipelineStep.RESEARCH,
         metadata: {

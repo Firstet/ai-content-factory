@@ -18,6 +18,9 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
+import { StrategicGoalSelector, GrowthGoal } from '@/components/common/StrategicGoalSelector';
+import { ContentCalendarImporter } from '@/components/common/ContentCalendarImporter';
+import { TestRunSandbox } from '@/components/common/TestRunSandbox';
 
 interface CalendarItem {
   id: string;
@@ -45,6 +48,11 @@ export default function CalendarWorkspacePage() {
   const [viewMode, setViewMode] = useState<'MONTH' | 'WEEK' | 'DAY'>('MONTH');
   const [currentMonth, setCurrentMonth] = useState('August 2026');
   const [selectedItem, setSelectedItem] = useState<CalendarItem | null>(null);
+
+  // Strategic AI Optimizer state
+  const [niche, setNiche] = useState('Tech & AI Innovations');
+  const [targetAudience, setTargetAudience] = useState('Tech & Productivity Enthusiasts');
+  const [growthGoal, setGrowthGoal] = useState<GrowthGoal>('SUBSCRIBERS');
 
   // Calendar Items Data
   const calendarItems: CalendarItem[] = [
@@ -187,7 +195,23 @@ export default function CalendarWorkspacePage() {
           </div>
         </div>
 
-        {/* Calendar Grid Workspace */}
+        {/* 1. Strategic Goals & Audience Profile Optimizer */}
+        <StrategicGoalSelector
+          niche={niche}
+          setNiche={setNiche}
+          targetAudience={targetAudience}
+          setTargetAudience={setTargetAudience}
+          growthGoal={growthGoal}
+          setGrowthGoal={setGrowthGoal}
+        />
+
+        {/* 2. Instant 30s Video Sandbox Test Run */}
+        <TestRunSandbox niche={niche} targetAudience={targetAudience} growthGoal={growthGoal} />
+
+        {/* 3. Platform-Aware AI Content Calendar Importer & Auto Router */}
+        <ContentCalendarImporter niche={niche} targetAudience={targetAudience} growthGoal={growthGoal} />
+
+        {/* 4. Calendar Grid Workspace */}
         <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
           {/* Day of Week Header */}
           <div className="grid grid-cols-7 bg-slate-950/80 border-b border-white/10 text-slate-400 font-extrabold text-[11px] uppercase tracking-wider text-center py-3">

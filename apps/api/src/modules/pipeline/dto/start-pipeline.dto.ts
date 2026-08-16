@@ -6,9 +6,10 @@ export class StartPipelineDto {
   @IsString()
   topic: string;
 
-  @ApiProperty({ description: 'Brand ID' })
+  @ApiProperty({ description: 'Brand ID', required: false })
+  @IsOptional()
   @IsUUID()
-  brandId: string;
+  brandId?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

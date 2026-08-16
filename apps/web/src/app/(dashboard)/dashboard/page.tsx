@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 
 import { useToast } from '@/components/common/Toast';
+import { TestRunSandbox } from '@/components/common/TestRunSandbox';
 
 export default function CreatorDashboardPage() {
   const { success, error } = useToast();
@@ -153,6 +154,8 @@ export default function CreatorDashboardPage() {
           </div>
         </div>
 
+        {/* Instant 30s Sandbox Test Run */}
+        <TestRunSandbox />
 
         {/* Today's Overview Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
