@@ -2,13 +2,18 @@
 
 import React, { useState } from 'react';
 import { Play, Sparkles, Tv, CheckCircle2, Film, RefreshCw, Volume2, ShieldCheck, Flame } from 'lucide-react';
-import { ContentPreviewModal } from './ContentPreviewModal';
+import { ContentPreviewModal, SceneItem } from './ContentPreviewModal';
 import { useToast } from './Toast';
 
 interface TestRunSandboxProps {
   niche?: string;
   targetAudience?: string;
   growthGoal?: string;
+}
+
+function getPollinationsUrl(prompt: string, seed = Math.floor(Math.random() * 899999) + 100000) {
+  const clean = encodeURIComponent(prompt || 'cinematic HD video scene');
+  return `https://image.pollinations.ai/prompt/${clean}?width=1280&height=720&seed=${seed}&nologo=true`;
 }
 
 export function TestRunSandbox({
@@ -19,16 +24,58 @@ export function TestRunSandbox({
   const { success, info } = useToast();
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [isGeneratingTest, setIsGeneratingTest] = useState(false);
+  const [generatedScenes, setGeneratedScenes] = useState<SceneItem[]>([]);
 
   const handleLaunchTestRun = async () => {
     setIsGeneratingTest(true);
-    info('Synthesizing Test Video...', `Generating 30s test run for niche: ${niche}`);
+    info('Synthesizing Test Video...', `Generating AI script, voice, and Pollinations B-Rolls for niche: ${niche}`);
 
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 900));
 
+    const seedBase = Math.floor(Math.random() * 500000);
+    const scenes: SceneItem[] = [
+      {
+        id: 'ts-1',
+        title: 'Hook / Scene 1',
+        content: `Attention ${targetAudience}! Here is the top secret strategy to dominate ${niche} in 2026.`,
+        visualPrompt: `High energy cinematic intro for ${niche}, glowing futuristic neon aesthetics 8k, 16:9`,
+        imageUrl: getPollinationsUrl(`High energy cinematic intro for ${niche}, glowing futuristic neon aesthetics 8k 16:9`, seedBase + 1),
+        timestamp: '00:00 - 00:05',
+        durationSeconds: 5,
+      },
+      {
+        id: 'ts-2',
+        title: 'Body / Scene 2',
+        content: `Step 1 is leveraging automated content workflows to triple your output while cutting production time by 80%.`,
+        visualPrompt: `High tech analytics dashboard showing viral growth trends for ${niche}, sleek UI 16:9`,
+        imageUrl: getPollinationsUrl(`High tech analytics dashboard showing viral growth trends for ${niche}, sleek UI 16:9`, seedBase + 2),
+        timestamp: '00:05 - 00:15',
+        durationSeconds: 10,
+      },
+      {
+        id: 'ts-3',
+        title: 'Body / Scene 3',
+        content: `Next, the Piper TTS engine synthesizes hyper-realistic voiceover narration synced frame-by-frame with Pollinations AI visuals.`,
+        visualPrompt: `Digital soundwave voice equalizer with vibrant glowing particle effects 16:9`,
+        imageUrl: getPollinationsUrl(`Digital soundwave voice equalizer with vibrant glowing particle effects 16:9`, seedBase + 3),
+        timestamp: '00:15 - 00:25',
+        durationSeconds: 10,
+      },
+      {
+        id: 'ts-4',
+        title: 'Call to Action / Scene 4',
+        content: `If your goal is to gain more ${growthGoal.toLowerCase()}, hit the subscribe button and turn on notifications now!`,
+        visualPrompt: `Glowing subscribe button with sparkling particles background for ${niche} 16:9`,
+        imageUrl: getPollinationsUrl(`Glowing subscribe button with sparkling particles background for ${niche} 16:9`, seedBase + 4),
+        timestamp: '00:25 - 00:30',
+        durationSeconds: 5,
+      },
+    ];
+
+    setGeneratedScenes(scenes);
     setIsGeneratingTest(false);
     setIsTestModalOpen(true);
-    success('Test Run Ready! 🎬', 'Opening interactive studio video previewer.');
+    success('Test Run Ready! 🎬', 'AI script, voiceover, and Pollinations B-Rolls generated.');
   };
 
   return (
@@ -64,7 +111,7 @@ export function TestRunSandbox({
             {isGeneratingTest ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                <span>Synthesizing Test Video...</span>
+                <span>Synthesizing Voice & Pollinations B-Rolls...</span>
               </>
             ) : (
               <>
@@ -107,8 +154,11 @@ export function TestRunSandbox({
       <ContentPreviewModal
         isOpen={isTestModalOpen}
         onClose={() => setIsTestModalOpen(false)}
-        title={`[Test Run Preview] ${niche}: 3 Secret Automation Hacks`}
+        title={`[Test Run Preview] ${niche}: Viral Growth Breakdown`}
+        scenes={generatedScenes}
+        niche={niche}
       />
     </>
   );
 }
+

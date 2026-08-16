@@ -49,13 +49,18 @@ interface ContentPreviewModalProps {
   onSaveScenes?: (updatedScenes: SceneItem[]) => void;
 }
 
+function getPollinationsUrl(prompt: string, seed = Math.floor(Math.random() * 899999) + 100000) {
+  const clean = encodeURIComponent(prompt || 'cinematic HD video scene');
+  return `https://image.pollinations.ai/prompt/${clean}?width=1280&height=720&seed=${seed}&nologo=true`;
+}
+
 const DEFAULT_SCENES: SceneItem[] = [
   {
     id: 's-1',
     title: 'Hook / Scene 1',
     content: 'Did you know AI can generate an entire YouTube video in under 60 seconds?',
-    visualPrompt: 'Futuristic AI neural network glowing in 8k cinematic lighting',
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+    visualPrompt: 'Futuristic AI neural network glowing in 8k cinematic lighting, 16:9',
+    imageUrl: getPollinationsUrl('Futuristic AI neural network glowing in 8k cinematic lighting, 16:9', 91823),
     timestamp: '00:00 - 00:05',
     durationSeconds: 5,
   },
@@ -63,8 +68,8 @@ const DEFAULT_SCENES: SceneItem[] = [
     id: 's-2',
     title: 'Body / Scene 2',
     content: 'Step 1 is automated trend research. The system scrapes top viral hooks across YouTube and TikTok.',
-    visualPrompt: 'High tech dashboard analyzing data graphs and trending keywords',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80',
+    visualPrompt: 'High tech dashboard analyzing data graphs and trending viral video keywords, 16:9',
+    imageUrl: getPollinationsUrl('High tech dashboard analyzing data graphs and trending viral video keywords, 16:9', 42312),
     timestamp: '00:05 - 00:15',
     durationSeconds: 10,
   },
@@ -72,8 +77,8 @@ const DEFAULT_SCENES: SceneItem[] = [
     id: 's-3',
     title: 'Body / Scene 3',
     content: 'Next, the Piper TTS voice synthesizer generates crystal-clear narration synchronized with Pollinations AI B-Roll.',
-    visualPrompt: 'Audio soundwave equalizer with vibrant neon gradients',
-    imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1200&q=80',
+    visualPrompt: 'Audio soundwave equalizer synthesizer with vibrant neon gradients, 16:9',
+    imageUrl: getPollinationsUrl('Audio soundwave equalizer synthesizer with vibrant neon gradients, 16:9', 88472),
     timestamp: '00:15 - 00:30',
     durationSeconds: 15,
   },
@@ -81,8 +86,8 @@ const DEFAULT_SCENES: SceneItem[] = [
     id: 's-4',
     title: 'Call to Action / Scene 4',
     content: 'Subscribe to AI Content Factory today and automate your content pipeline on autopilot!',
-    visualPrompt: 'Glowing subscribe button with sparkling particles background',
-    imageUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=1200&q=80',
+    visualPrompt: 'Glowing subscribe button with sparkling particles background, 16:9',
+    imageUrl: getPollinationsUrl('Glowing subscribe button with sparkling particles background, 16:9', 19482),
     timestamp: '00:30 - 00:45',
     durationSeconds: 15,
   },
@@ -100,15 +105,59 @@ export function ContentPreviewModal({
   onSaveScenes,
 }: ContentPreviewModalProps) {
   const [activeTab, setActiveTab] = useState<'PREVIEW' | 'EDITOR'>('PREVIEW');
-  const [sceneList, setSceneList] = useState<SceneItem[]>(
-    scenes.length > 0 ? scenes : DEFAULT_SCENES
-  );
+  const [sceneList, setSceneList] = useState<SceneItem[]>(() => {
+    const raw = scenes.length > 0 ? scenes : DEFAULT_SCENES;
+    return raw.map((s, idx) => {
+      const isUnsplash = !s.imageUrl || s.imageUrl.includes('unsplash');
+      const seed = 100000 + idx * 777;
+      return {
+        ...s,
+        imageUrl: isUnsplash ? getPollinationsUrl(s.visualPrompt || s.title || 'cinematic video scene', seed) : s.imageUrl,
+      };
+    });
+  });
   const [activeSceneIndex, setActiveSceneIndex] = useState(0);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   if (!isOpen) return null;
 
   const currentScene = sceneList[activeSceneIndex] || sceneList[0] || DEFAULT_SCENES[0];
+
+  // TTS Voiceover Narration Speech Handler
+  function handleSpeakSceneNarration(text: string) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+
+    if (isSpeaking) {
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // Regenerate all scene visuals with Pollinations AI
+  function handleRegenerateAllVisuals() {
+    setIsRegenerating(true);
+    setTimeout(() => {
+      const seedBase = Math.floor(Math.random() * 900000);
+      const updated = sceneList.map((scene, idx) => ({
+        ...scene,
+        imageUrl: getPollinationsUrl(scene.visualPrompt || scene.title || 'cinematic video scene', seedBase + idx * 123),
+      }));
+      setSceneList(updated);
+      setIsRegenerating(false);
+      onSaveScenes?.(updated);
+    }, 800);
+  }
 
   // Helper functions for Scene Editor
   function handleSceneTextChange(index: number, newText: string) {
@@ -164,12 +213,13 @@ export function ContentPreviewModal({
 
   function handleAddScene() {
     const newIdx = sceneList.length + 1;
+    const prompt = `Cinematic ${niche} scene ${newIdx}, 8k highly detailed, 16:9`;
     const newScene: SceneItem = {
       id: `s-${Date.now()}`,
       title: `Scene ${newIdx}`,
       content: 'Enter scene narration text here...',
-      visualPrompt: 'Cinematic HD b-roll image prompt',
-      imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+      visualPrompt: prompt,
+      imageUrl: getPollinationsUrl(prompt, Math.floor(Math.random() * 800000)),
       timestamp: `00:${newIdx * 10 - 10} - 00:${newIdx * 10}`,
       durationSeconds: 10,
     };
@@ -183,8 +233,7 @@ export function ContentPreviewModal({
     setIsRegenerating(true);
     const scene = sceneList[index];
     const seed = Math.floor(Math.random() * 1000000);
-    const prompt = encodeURIComponent(scene.visualPrompt || scene.title || 'cinematic video scene');
-    const newImageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=1280&height=720&seed=${seed}&nologo=true`;
+    const newImageUrl = getPollinationsUrl(scene.visualPrompt || scene.title || 'cinematic video scene', seed);
 
     setTimeout(() => {
       const updated = [...sceneList];
@@ -192,7 +241,7 @@ export function ContentPreviewModal({
       setSceneList(updated);
       setIsRegenerating(false);
       onSaveScenes?.(updated);
-    }, 800);
+    }, 600);
   }
 
   return (
@@ -276,18 +325,38 @@ export function ContentPreviewModal({
 
                       {/* Subtitle Teleprompter Overlay */}
                       <div className="absolute bottom-6 inset-x-6 text-center space-y-2">
-                        <div className="inline-block px-4 py-2 rounded-2xl bg-slate-950/80 backdrop-blur-md border border-white/20 text-white font-extrabold text-xs sm:text-sm shadow-xl max-w-xl">
-                          "{currentScene.content || currentScene.narration}"
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-white/20 text-white font-extrabold text-xs sm:text-sm shadow-xl max-w-xl">
+                          <span>"{currentScene.content || currentScene.narration}"</span>
+                          <button
+                            onClick={() => handleSpeakSceneNarration(currentScene.content || currentScene.narration || '')}
+                            title="Listen to AI Voice Narration for this Scene"
+                            className="shrink-0 p-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-500/30"
+                          >
+                            <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse text-amber-300' : ''}`} />
+                          </button>
                         </div>
-                        <div className="text-[10px] font-mono text-slate-400">
-                          Duration: {currentScene.durationSeconds || 10}s • Scene {activeSceneIndex + 1} of {sceneList.length}
+                        <div className="text-[10px] font-mono text-slate-400 flex items-center justify-center gap-2">
+                          <span>Duration: {currentScene.durationSeconds || 10}s</span>
+                          <span>•</span>
+                          <span>Scene {activeSceneIndex + 1} of {sceneList.length}</span>
                         </div>
                       </div>
 
-                      {/* Play Badge */}
-                      <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 text-[10px] font-extrabold text-amber-300 flex items-center gap-1.5">
-                        <Film className="w-3.5 h-3.5 text-amber-400" />
-                        Visual & Audio Sync Ready
+                      {/* Top Badges */}
+                      <div className="absolute top-4 inset-x-4 flex items-center justify-between pointer-events-none">
+                        <div className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/10 text-[10px] font-extrabold text-amber-300 flex items-center gap-1.5 pointer-events-auto">
+                          <Film className="w-3.5 h-3.5 text-amber-400" />
+                          Pollinations AI Visual & Piper Audio Sync
+                        </div>
+
+                        <button
+                          onClick={handleRegenerateAllVisuals}
+                          disabled={isRegenerating}
+                          className="px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-indigo-500/40 hover:bg-indigo-600/40 text-[10px] font-extrabold text-indigo-300 flex items-center gap-1.5 pointer-events-auto transition-all"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 text-indigo-400 ${isRegenerating ? 'animate-spin' : ''}`} />
+                          Regenerate Scene B-Rolls
+                        </button>
                       </div>
                     </>
                   )}
@@ -300,12 +369,22 @@ export function ContentPreviewModal({
                       <Layers className="w-3.5 h-3.5 text-indigo-400" />
                       Select Video Scene to Preview
                     </label>
-                    <button
-                      onClick={() => setActiveTab('EDITOR')}
-                      className="text-[11px] font-extrabold text-purple-400 hover:text-purple-300 flex items-center gap-1"
-                    >
-                      <Edit3 className="w-3 h-3" /> Edit Scenes
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleRegenerateAllVisuals}
+                        disabled={isRegenerating}
+                        className="text-[11px] font-extrabold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isRegenerating ? 'animate-spin' : ''}`} />
+                        Refresh All B-Rolls
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('EDITOR')}
+                        className="text-[11px] font-extrabold text-purple-400 hover:text-purple-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20"
+                      >
+                        <Edit3 className="w-3 h-3" /> Edit Scenes
+                      </button>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">

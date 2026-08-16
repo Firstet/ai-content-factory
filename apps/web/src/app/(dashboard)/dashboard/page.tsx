@@ -75,7 +75,7 @@ export default function CreatorDashboardPage() {
       scheduledTime: 'Today at 06:00 PM',
       status: 'Rendering',
       statusStep: 'FFmpeg Assembly (80%)',
-      thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
+      thumbnail: `https://image.pollinations.ai/prompt/${encodeURIComponent('How Quantum AI Computing Will Change Software Development 16:9')}&width=600&height=338&seed=8192&nologo=true`,
     },
     {
       id: 'sp-2',
@@ -85,7 +85,7 @@ export default function CreatorDashboardPage() {
       scheduledTime: 'Tomorrow at 09:00 AM',
       status: 'Writing Script',
       statusStep: 'SEO & Script Generation',
-      thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
+      thumbnail: `https://image.pollinations.ai/prompt/${encodeURIComponent('3 Secret Automation Hacks You Need in 2026 16:9')}&width=600&height=338&seed=9482&nologo=true`,
     },
     {
       id: 'sp-3',
@@ -95,7 +95,7 @@ export default function CreatorDashboardPage() {
       scheduledTime: 'Tomorrow at 06:00 PM',
       status: 'Scheduled',
       statusStep: 'Topic Research',
-      thumbnail: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80',
+      thumbnail: `https://image.pollinations.ai/prompt/${encodeURIComponent('AI vs Human Coders Benchmark Test 16:9')}&width=600&height=338&seed=1823&nologo=true`,
     },
   ];
 
