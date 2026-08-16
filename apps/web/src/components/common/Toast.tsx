@@ -16,6 +16,8 @@ interface ToastContextType {
   toast: (title: string, message?: string, type?: ToastType) => void;
   success: (title: string, message?: string) => void;
   error: (title: string, message?: string) => void;
+  info: (title: string, message?: string) => void;
+  warning: (title: string, message?: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -38,9 +40,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const success = useCallback((title: string, message?: string) => addToast(title, message, 'success'), [addToast]);
   const error = useCallback((title: string, message?: string) => addToast(title, message, 'error'), [addToast]);
+  const info = useCallback((title: string, message?: string) => addToast(title, message, 'info'), [addToast]);
+  const warning = useCallback((title: string, message?: string) => addToast(title, message, 'warning'), [addToast]);
 
   return (
-    <ToastContext.Provider value={{ toast: addToast, success, error }}>
+    <ToastContext.Provider value={{ toast: addToast, success, error, info, warning }}>
       {children}
       {/* Toast Notification Container */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-md w-full pointer-events-none px-4 sm:px-0">
