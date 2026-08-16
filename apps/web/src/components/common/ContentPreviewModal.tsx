@@ -37,6 +37,8 @@ export interface SceneItem {
   durationSeconds?: number;
 }
 
+export type AspectRatioType = '9:16' | '16:9' | '1:1' | 'AUTO';
+
 interface ContentPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -46,12 +48,31 @@ interface ContentPreviewModalProps {
   videoUrl?: string;
   audioUrl?: string;
   niche?: string;
+  initialAspectRatio?: AspectRatioType;
   onSaveScenes?: (updatedScenes: SceneItem[]) => void;
 }
 
-function getPollinationsUrl(prompt: string, seed = Math.floor(Math.random() * 899999) + 100000) {
-  const clean = encodeURIComponent(prompt || 'cinematic HD video scene');
-  return `https://image.pollinations.ai/prompt/${clean}?width=1280&height=720&seed=${seed}&nologo=true`;
+export function getPollinationsUrl(
+  prompt: string,
+  seed = Math.floor(Math.random() * 899999) + 100000,
+  aspectRatio: AspectRatioType = '16:9'
+) {
+  let width = 1280;
+  let height = 720;
+  let arSuffix = ', 16:9 widescreen HD';
+
+  if (aspectRatio === '9:16') {
+    width = 720;
+    height = 1280;
+    arSuffix = ', 9:16 vertical mobile short tiktok video';
+  } else if (aspectRatio === '1:1') {
+    width = 1080;
+    height = 1080;
+    arSuffix = ', 1:1 square instagram video';
+  }
+
+  const clean = encodeURIComponent((prompt || 'cinematic HD video scene') + arSuffix);
+  return `https://image.pollinations.ai/prompt/${clean}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
 }
 
 const DEFAULT_SCENES: SceneItem[] = [
@@ -60,7 +81,7 @@ const DEFAULT_SCENES: SceneItem[] = [
     title: 'Hook / Scene 1',
     content: 'Did you know AI can generate an entire YouTube video in under 60 seconds?',
     visualPrompt: 'Futuristic AI neural network glowing in 8k cinematic lighting, 16:9',
-    imageUrl: getPollinationsUrl('Futuristic AI neural network glowing in 8k cinematic lighting, 16:9', 91823),
+    imageUrl: getPollinationsUrl('Futuristic AI neural network glowing in 8k cinematic lighting, 16:9', 91823, '16:9'),
     timestamp: '00:00 - 00:05',
     durationSeconds: 5,
   },
@@ -69,7 +90,7 @@ const DEFAULT_SCENES: SceneItem[] = [
     title: 'Body / Scene 2',
     content: 'Step 1 is automated trend research. The system scrapes top viral hooks across YouTube and TikTok.',
     visualPrompt: 'High tech dashboard analyzing data graphs and trending viral video keywords, 16:9',
-    imageUrl: getPollinationsUrl('High tech dashboard analyzing data graphs and trending viral video keywords, 16:9', 42312),
+    imageUrl: getPollinationsUrl('High tech dashboard analyzing data graphs and trending viral video keywords, 16:9', 42312, '16:9'),
     timestamp: '00:05 - 00:15',
     durationSeconds: 10,
   },
@@ -78,7 +99,7 @@ const DEFAULT_SCENES: SceneItem[] = [
     title: 'Body / Scene 3',
     content: 'Next, the Piper TTS voice synthesizer generates crystal-clear narration synchronized with Pollinations AI B-Roll.',
     visualPrompt: 'Audio soundwave equalizer synthesizer with vibrant neon gradients, 16:9',
-    imageUrl: getPollinationsUrl('Audio soundwave equalizer synthesizer with vibrant neon gradients, 16:9', 88472),
+    imageUrl: getPollinationsUrl('Audio soundwave equalizer synthesizer with vibrant neon gradients, 16:9', 88472, '16:9'),
     timestamp: '00:15 - 00:30',
     durationSeconds: 15,
   },
@@ -87,7 +108,7 @@ const DEFAULT_SCENES: SceneItem[] = [
     title: 'Call to Action / Scene 4',
     content: 'Subscribe to AI Content Factory today and automate your content pipeline on autopilot!',
     visualPrompt: 'Glowing subscribe button with sparkling particles background, 16:9',
-    imageUrl: getPollinationsUrl('Glowing subscribe button with sparkling particles background, 16:9', 19482),
+    imageUrl: getPollinationsUrl('Glowing subscribe button with sparkling particles background, 16:9', 19482, '16:9'),
     timestamp: '00:30 - 00:45',
     durationSeconds: 15,
   },
@@ -102,9 +123,11 @@ export function ContentPreviewModal({
   videoUrl,
   audioUrl,
   niche = 'Tech & AI',
+  initialAspectRatio = '9:16',
   onSaveScenes,
 }: ContentPreviewModalProps) {
   const [activeTab, setActiveTab] = useState<'PREVIEW' | 'EDITOR'>('PREVIEW');
+  const [aspectRatio, setAspectRatio] = useState<AspectRatioType>(initialAspectRatio);
   const [sceneList, setSceneList] = useState<SceneItem[]>(() => {
     const raw = scenes.length > 0 ? scenes : DEFAULT_SCENES;
     return raw.map((s, idx) => {
@@ -112,10 +135,22 @@ export function ContentPreviewModal({
       const seed = 100000 + idx * 777;
       return {
         ...s,
-        imageUrl: isUnsplash ? getPollinationsUrl(s.visualPrompt || s.title || 'cinematic video scene', seed) : s.imageUrl,
+        imageUrl: isUnsplash ? getPollinationsUrl(s.visualPrompt || s.title || 'cinematic video scene', seed, initialAspectRatio) : s.imageUrl,
       };
     });
   });
+
+  // Sync props when scenes or initialAspectRatio change
+  React.useEffect(() => {
+    if (scenes && scenes.length > 0) {
+      setSceneList(scenes);
+    }
+  }, [scenes]);
+
+  React.useEffect(() => {
+    setAspectRatio(initialAspectRatio);
+  }, [initialAspectRatio]);
+
   const [activeSceneIndex, setActiveSceneIndex] = useState(0);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -405,8 +440,79 @@ export function ContentPreviewModal({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left 2 Cols: Video & Teleprompter Player */}
               <div className="lg:col-span-2 space-y-4">
-                {/* 16:9 Video Canvas Box */}
-                <div className="relative aspect-video rounded-2xl bg-slate-950 overflow-hidden border border-white/10 group shadow-2xl">
+                {/* Aspect Ratio Controls Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs">
+                  <span className="font-extrabold text-slate-300 text-[11px] flex items-center gap-1.5">
+                    <Film className="w-3.5 h-3.5 text-indigo-400" /> Player Display Aspect Ratio:
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setAspectRatio('9:16');
+                        setSceneList((prev) =>
+                          prev.map((s, idx) => ({
+                            ...s,
+                            imageUrl: getPollinationsUrl(s.visualPrompt || s.title || '', 100000 + idx * 777, '9:16'),
+                          }))
+                        );
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all ${
+                        aspectRatio === '9:16'
+                          ? 'bg-indigo-600 text-white border border-indigo-400 shadow-md shadow-indigo-500/20'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      📱 9:16 Vertical Shorts
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAspectRatio('16:9');
+                        setSceneList((prev) =>
+                          prev.map((s, idx) => ({
+                            ...s,
+                            imageUrl: getPollinationsUrl(s.visualPrompt || s.title || '', 100000 + idx * 777, '16:9'),
+                          }))
+                        );
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all ${
+                        aspectRatio === '16:9'
+                          ? 'bg-indigo-600 text-white border border-indigo-400 shadow-md shadow-indigo-500/20'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      🖥️ 16:9 Widescreen
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAspectRatio('1:1');
+                        setSceneList((prev) =>
+                          prev.map((s, idx) => ({
+                            ...s,
+                            imageUrl: getPollinationsUrl(s.visualPrompt || s.title || '', 100000 + idx * 777, '1:1'),
+                          }))
+                        );
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all ${
+                        aspectRatio === '1:1'
+                          ? 'bg-indigo-600 text-white border border-indigo-400 shadow-md shadow-indigo-500/20'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      🟦 1:1 Square
+                    </button>
+                  </div>
+                </div>
+
+                {/* Video Canvas Box with Dynamic Aspect Ratio */}
+                <div
+                  className={`relative bg-slate-950 overflow-hidden group transition-all duration-300 ${
+                    aspectRatio === '9:16'
+                      ? 'aspect-[9/16] max-h-[500px] max-w-[280px] mx-auto rounded-3xl border-4 border-indigo-500/40 shadow-2xl shadow-indigo-500/20'
+                      : aspectRatio === '1:1'
+                      ? 'aspect-square max-h-[440px] max-w-[440px] mx-auto rounded-2xl border-2 border-indigo-500/40 shadow-2xl'
+                      : 'aspect-video rounded-2xl border border-white/10 shadow-2xl'
+                  }`}
+                >
                   {renderedMp4Url ? (
                     <div className="relative w-full h-full">
                       <video src={renderedMp4Url} controls autoPlay className="w-full h-full object-cover" />

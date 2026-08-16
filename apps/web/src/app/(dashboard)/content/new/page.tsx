@@ -10,6 +10,7 @@ import { DEFAULT_VOICES } from '@/components/common/VoicePreviewPlayer';
 export default function NewContentPage() {
   const [topic, setTopic] = useState('');
   const [targetDuration, setTargetDuration] = useState(10);
+  const [aspectRatio, setAspectRatio] = useState('9:16');
   const [brandId, setBrandId] = useState('');
   const [channelId, setChannelId] = useState('');
   const [targetAudience, setTargetAudience] = useState('Tech-savvy professionals & AI enthusiasts');
@@ -47,6 +48,7 @@ export default function NewContentPage() {
         brandId,
         channelId: channelId || undefined,
         targetDuration: Number(targetDuration),
+        aspectRatio,
         targetAudience,
         language,
         tone,
@@ -133,6 +135,23 @@ export default function NewContentPage() {
                 onChange={(e) => setTargetDuration(Number(e.target.value))}
                 className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
               />
+            </div>
+
+            {/* Video Screen Aspect Ratio */}
+            <div>
+              <label className="block font-semibold text-slate-300 mb-2 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Screen Aspect Ratio
+              </label>
+              <select
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(e.target.value)}
+                className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-indigo-300 font-extrabold focus:outline-none focus:border-indigo-500"
+              >
+                <option value="9:16">📱 9:16 Vertical (Shorts, Reels, TikTok)</option>
+                <option value="16:9">🖥️ 16:9 Widescreen (YouTube Long-form)</option>
+                <option value="1:1">🟦 1:1 Square (Instagram / Social Feed)</option>
+                <option value="AUTO">⚡ Auto-Detect Based on Content</option>
+              </select>
             </div>
 
             {/* Target Audience */}
