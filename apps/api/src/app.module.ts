@@ -47,16 +47,28 @@ import { ContentModule } from './modules/content/content.module';
     ]),
 
     // ─── BullMQ Queues ───────────────────────────────────────
-    BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-      },
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 5000 },
-        removeOnComplete: { count: 100 },
-        removeOnFail: { count: 50 },
+    BullModule.forRootAsync({
+      useFactory: () => {
+        const redisUrl = process.env.REDIS_URL || 'redis://redis:6379';
+        let host = 'redis';
+        let port = 6379;
+        try {
+          const parsed = new URL(redisUrl);
+          host = parsed.hostname || 'redis';
+          port = parseInt(parsed.port || '6379');
+        } catch {
+          host = process.env.REDIS_HOST || 'redis';
+          port = parseInt(process.env.REDIS_PORT || '6379');
+        }
+        return {
+          connection: { host, port, maxRetriesPerRequest: null },
+          defaultJobOptions: {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 5000 },
+            removeOnComplete: { count: 100 },
+            removeOnFail: { count: 50 },
+          },
+        };
       },
     }),
     BullModule.registerQueue(
