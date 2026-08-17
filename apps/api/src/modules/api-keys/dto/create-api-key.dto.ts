@@ -34,4 +34,9 @@ export class CreateApiKeyDto {
   @IsOptional()
   @IsString()
   modelName?: string;
+
+  @ApiProperty({ required: false, example: 'https://integrate.api.nvidia.com/v1', description: 'Base URL endpoint' })
+  @IsOptional()
+  @IsString()
+  baseUrl?: string;
 }

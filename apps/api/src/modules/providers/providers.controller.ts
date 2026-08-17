@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Patch, Param, Body } from '@nestjs/common';
+import { Controller, Get, Put, Patch, Post, Param, Body } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ProvidersService } from './providers.service';
 
