@@ -10,7 +10,7 @@ import * as path from 'path';
 import * as os from 'os';
 import axios from 'axios';
 import { createWorker, prisma, emitJobProgress, enqueueNextStep } from '../shared/worker.base';
-import { callImageProvider, callTextProvider } from '../shared/ai-helper';
+import { callImageProvider, callTextProvider, resolveKeyForTask } from '../shared/ai-helper';
 import { CryptoService } from '../shared/crypto-helper';
 import { QUEUE_NAMES, PipelineStep } from '@acf/shared';
 
