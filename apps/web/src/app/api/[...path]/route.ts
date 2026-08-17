@@ -23,11 +23,12 @@ async function proxyRequest(
     const pathString = Array.isArray(path) ? path.join('/') : (path || '');
     const searchParams = request.nextUrl.search || '';
 
-    // Prioritize Docker internal DNS service name (http://api:3001/api)
+    // Internal server-to-server proxy candidates ONLY (Docker internal DNS / local dev)
     const rawCandidates = [
-      'http://api:3001/api',
       process.env.INTERNAL_API_URL,
-      process.env.NEXT_PUBLIC_API_URL,
+      'http://api:3001/api',
+      'http://127.0.0.1:3001/api',
+      'http://localhost:3001/api',
     ];
 
     const candidates = Array.from(
