@@ -33,21 +33,63 @@ export class ProvidersService implements OnModuleInit {
       });
     }
 
-    // Auto-seed default NVIDIA API Key if no keys exist in ApiKey table
-    const keyCount = await this.prisma.apiKey.count();
-    if (keyCount === 0) {
-      const nvidiaProvider = await this.prisma.provider.findFirst({ where: { name: 'NVIDIA' } });
-      if (nvidiaProvider) {
-        await this.prisma.apiKey.create({
+    // Ensure NVIDIA provider and default active API key are present and synchronized
+    const nvidiaProvider = await this.prisma.provider.findFirst({ where: { name: 'NVIDIA' } });
+    if (nvidiaProvider) {
+      const encryptedNvKey = this.crypto.encrypt('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');
+      const existingNvKey = await this.prisma.apiKey.findFirst({
+        where: { providerId: nvidiaProvider.id },
+      });
+
+      let nvApiKeyId = '';
+
+      if (!existingNvKey) {
+        const createdKey = await this.prisma.apiKey.create({
           data: {
             providerId: nvidiaProvider.id,
-            label: 'NVIDIA NIM Free Trial Key',
-            encryptedKey: this.crypto.encrypt('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'),
-            platform: 'https://integrate.api.nvidia.com/v1|model:nvidia/nvidia-nemotron-nano-9b-v2|task:ALL_IN_ONE',
+            label: 'NVIDIA NIM Primary Key',
+            encryptedKey: encryptedNvKey,
+            baseUrl: 'https://integrate.api.nvidia.com/v1',
+            platform: 'https://integrate.api.nvidia.com/v1|protocol:openai_compatible',
             keyType: 'api',
+            status: 'CONNECTED',
+            discoveredModels: ['nvidia/nvidia-nemotron-nano-9b-v2', 'meta/llama-3.3-70b-instruct'],
+            discoveredCapabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING'],
+            lastTestedAt: new Date(),
           },
         });
+        nvApiKeyId = createdKey.id;
         console.log('[ProvidersService] Auto-seeded default NVIDIA API key into database.');
+      } else {
+        await this.prisma.apiKey.update({
+          where: { id: existingNvKey.id },
+          data: {
+            encryptedKey: encryptedNvKey,
+            status: 'CONNECTED',
+            baseUrl: 'https://integrate.api.nvidia.com/v1',
+            lastTestedAt: new Date(),
+          },
+        });
+        nvApiKeyId = existingNvKey.id;
+        console.log('[ProvidersService] Synchronized active NVIDIA API key into database.');
+      }
+
+      // Auto-seed default Task Routes for AI Content Operating System
+      const defaultTasks = ['RESEARCH', 'SEO_RESEARCH', 'CONTENT_STRATEGY', 'SCRIPTWRITING', 'COPYWRITING'];
+      for (const taskName of defaultTasks) {
+        await this.prisma.taskRoute.upsert({
+          where: { task: taskName },
+          update: {
+            primaryCredentialId: nvApiKeyId,
+            primaryModelId: 'nvidia/nvidia-nemotron-nano-9b-v2',
+          },
+          create: {
+            task: taskName,
+            primaryCredentialId: nvApiKeyId,
+            primaryModelId: 'nvidia/nvidia-nemotron-nano-9b-v2',
+            autoFallbackEnabled: true,
+          },
+        });
       }
     }
   }
