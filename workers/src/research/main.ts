@@ -41,25 +41,18 @@ createWorker(QUEUE_NAMES.RESEARCH, async (job: Job<ResearchJobData>) => {
     orderBy: [{ brandId: 'asc' }, { createdAt: 'desc' }],
   });
 
-  // 2. Get an enabled AI provider for text generation
-  const provider = await prisma.provider.findFirst({
-    where: { enabled: true, apiKeys: { some: { isActive: true } } },
-    include: { apiKeys: { where: { isActive: true }, take: 1 } },
-  });
+  // 2. Dynamically resolve API key assigned to 'research' task
+  const { resolveKeyForTask, callTextProvider } = await import('../shared/ai-helper');
+  const resolvedKey = await resolveKeyForTask(prisma, 'research');
 
   let researchSummary = '';
   let suggestedAngles: string[] = [];
 
-  if (provider && provider.apiKeys.length > 0) {
-    await emitJobProgress(videoId, PipelineStep.RESEARCH, 30, `Using ${provider.displayName} for research...`);
+  if (resolvedKey) {
+    const { providerName, displayName, apiKey, model, customBaseURL } = resolvedKey;
+    await emitJobProgress(videoId, PipelineStep.RESEARCH, 30, `Using ${displayName} for research...`);
 
     try {
-      // Decrypt API key
-      const { CryptoService } = await import('../shared/crypto-helper');
-      const activeKey = provider.apiKeys[0];
-      const apiKey = CryptoService.decrypt(activeKey.encryptedKey);
-      const customBaseURL = activeKey.platform || provider.baseUrl || undefined;
-
       // Build research prompt
       let promptText = prompt?.template || `Research the topic: "${topic}" thoroughly. Provide:
 1. A comprehensive summary (500 words)
@@ -74,8 +67,7 @@ Return as JSON: { summary, angles, facts, audienceInsights }`;
         .replace(/{{language}}/g, language);
 
       // Call AI provider
-      const { callTextProvider } = await import('../shared/ai-helper');
-      const response = await callTextProvider(provider.name, apiKey, promptText, undefined, undefined, customBaseURL);
+      const response = await callTextProvider(providerName, apiKey, promptText, undefined, model, customBaseURL);
 
       try {
         const parsed = JSON.parse(response.replace(/```json\n?|\n?```/g, '').trim());
@@ -90,7 +82,7 @@ Return as JSON: { summary, angles, facts, audienceInsights }`;
       researchSummary = `Research for "${topic}": ${topic} is a fascinating subject that warrants deep exploration.`;
     }
   } else {
-    console.warn('No AI provider available for research — using placeholder');
+    console.warn('No AI key/provider resolved for research — using placeholder');
     researchSummary = `Research summary for: ${topic}`;
   }
 

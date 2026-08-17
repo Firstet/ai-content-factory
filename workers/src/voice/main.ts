@@ -48,28 +48,25 @@ createWorker(QUEUE_NAMES.VOICE, async (job: Job) => {
     scriptContent.callToAction,
   ].filter(Boolean).join('\n\n');
 
-  // Get active provider with API Key
-  const provider = await prisma.provider.findFirst({
-    where: { enabled: true, apiKeys: { some: { isActive: true } } },
-    include: { apiKeys: { where: { isActive: true }, take: 1 } },
-  });
+  // Resolve API Key configured specifically for speech/voice narration
+  const { resolveKeyForTask } = await import('../shared/ai-helper');
+  const resolvedKey = await resolveKeyForTask(prisma, 'speech') || await resolveKeyForTask(prisma, 'voice');
 
   let audioBuffer: Buffer | null = null;
 
-  if (provider && provider.name === 'OPENAI' && provider.apiKeys.length > 0) {
+  if (resolvedKey && resolvedKey.providerName === 'OPENAI') {
     try {
-      await emitJobProgress(videoId, PipelineStep.VOICE, 20, `Generating voice with ${provider.displayName}...`);
-      const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
-      const voice = (provider.modelConfig as any)?.voice || 'alloy';
-      audioBuffer = await callSpeechProvider(provider.name, apiKey, fullText, voice);
+      await emitJobProgress(videoId, PipelineStep.VOICE, 20, `Generating voice with ${resolvedKey.displayName}...`);
+      const voice = 'alloy';
+      audioBuffer = await callSpeechProvider(resolvedKey.providerName, resolvedKey.apiKey, fullText, voice);
     } catch (err: any) {
-      console.warn(`OpenAI Speech call warning: ${err.message}. Using free TTS fallback...`);
+      console.warn(`External Speech call warning: ${err.message}. Using built-in PIPER / free voice narration...`);
     }
   }
 
-  // Fallback to Free Voice TTS
+  // Fallback to Built-In PIPER / Free Voice TTS
   if (!audioBuffer) {
-    await emitJobProgress(videoId, PipelineStep.VOICE, 30, 'Using free voice synthesis...');
+    await emitJobProgress(videoId, PipelineStep.VOICE, 30, 'Using built-in voice narration...');
     audioBuffer = await generateFreeTTS(fullText);
   }
 

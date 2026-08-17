@@ -5,6 +5,84 @@
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { CryptoService } from './crypto-helper';
+
+export interface ResolvedTaskKey {
+  providerName: string;
+  displayName: string;
+  apiKey: string;
+  model?: string;
+  customBaseURL?: string;
+}
+
+/**
+ * Dynamically resolves the active API Key & Provider configured for a specific pipeline task.
+ * 
+ * Lookup Order:
+ * 1. ApiKey explicitly assigned with `task:${taskName}` in platform field.
+ * 2. ApiKey assigned with `task:ALL_IN_ONE`.
+ * 3. Provider enabled with `preferredFor` or `capabilities` containing `${taskName}`.
+ * 4. Fallback to first active key.
+ */
+export async function resolveKeyForTask(
+  prismaClient: any,
+  taskName: string,
+): Promise<ResolvedTaskKey | null> {
+  try {
+    const allActiveKeys = await prismaClient.apiKey.findMany({
+      where: { isActive: true },
+      include: { provider: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    if (!allActiveKeys || allActiveKeys.length === 0) {
+      return null;
+    }
+
+    // 1. Direct task match: e.g. "task:script" or "task:image"
+    let match = allActiveKeys.find((k: any) => k.platform?.includes(`task:${taskName}`));
+
+    // 2. Master Key match: "task:ALL_IN_ONE"
+    if (!match) {
+      match = allActiveKeys.find((k: any) => k.platform?.includes('task:ALL_IN_ONE'));
+    }
+
+    // 3. Provider Preferred / Capability match
+    if (!match) {
+      match = allActiveKeys.find((k: any) => {
+        const p = k.provider;
+        if (!p || !p.enabled) return false;
+        return p.preferredFor?.includes(taskName) || p.capabilities?.includes(taskName);
+      });
+    }
+
+    // 4. Any Active Key Fallback
+    if (!match) {
+      match = allActiveKeys[0];
+    }
+
+    const decryptedKey = CryptoService.decrypt(match.encryptedKey);
+
+    // Parse platform metadata: "https://...|model:xyz|task:abc"
+    const platformStr = match.platform || '';
+    const matchModel = platformStr.match(/model:([^|]+)/);
+    const targetModel = matchModel ? matchModel[1] : undefined;
+
+    const matchBase = platformStr.split('|')[0];
+    const customBaseURL = matchBase && matchBase.startsWith('http') ? matchBase : match.provider?.baseUrl || undefined;
+
+    return {
+      providerName: match.provider?.name || 'CUSTOM_AI',
+      displayName: match.provider?.displayName || match.label || 'AI Provider',
+      apiKey: decryptedKey,
+      model: targetModel,
+      customBaseURL,
+    };
+  } catch (err: any) {
+    console.error(`[resolveKeyForTask] Error resolving key for task ${taskName}:`, err.message);
+    return null;
+  }
+}
 
 export async function callTextProvider(
   providerName: string,
@@ -134,3 +212,4 @@ export async function callSpeechProvider(
   }
   throw new Error(`Speech generation not supported for ${providerName}`);
 }
+

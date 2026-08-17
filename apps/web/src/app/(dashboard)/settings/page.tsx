@@ -376,16 +376,31 @@ export default function CreatorSettingsPage() {
   };
 
   const getTaskBadge = (platformStr: string) => {
-    if (platformStr?.includes('task:VOICE_TTS')) {
-      return { text: '🔊 Voice Narration', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' };
+    if (platformStr?.includes('task:script')) {
+      return { text: '🎯 Scriptwriting', bg: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' };
     }
-    if (platformStr?.includes('task:IMAGE_GENERATION')) {
-      return { text: '🎨 Image B-Roll', bg: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+    if (platformStr?.includes('task:research')) {
+      return { text: '🔍 Topic Research', bg: 'bg-blue-500/20 text-blue-300 border-blue-500/30' };
     }
-    if (platformStr?.includes('task:ALL_IN_ONE')) {
-      return { text: '🚀 All-In-One', bg: 'bg-purple-500/20 text-purple-300 border-purple-500/30' };
+    if (platformStr?.includes('task:fact-check')) {
+      return { text: '🛡️ Fact Checking', bg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' };
     }
-    return { text: '📝 Research & Script', bg: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' };
+    if (platformStr?.includes('task:seo')) {
+      return { text: '📈 SEO Metadata', bg: 'bg-teal-500/20 text-teal-300 border-teal-500/30' };
+    }
+    if (platformStr?.includes('task:speech') || platformStr?.includes('task:VOICE_TTS')) {
+      return { text: '🎙️ Voice Narration', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' };
+    }
+    if (platformStr?.includes('task:image') || platformStr?.includes('task:IMAGE_GENERATION')) {
+      return { text: '🖼️ Image B-Roll', bg: 'bg-amber-500/20 text-amber-300 border-amber-500/30' };
+    }
+    if (platformStr?.includes('task:thumbnail')) {
+      return { text: '🎨 Thumbnail Design', bg: 'bg-rose-500/20 text-rose-300 border-rose-500/30' };
+    }
+    if (platformStr?.includes('task:video')) {
+      return { text: '🎬 Video Rendering', bg: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30' };
+    }
+    return { text: '🌟 All-In-One', bg: 'bg-purple-500/20 text-purple-300 border-purple-500/30' };
   };
 
   const getModelName = (platformStr: string) => {
@@ -709,10 +724,15 @@ export default function CreatorSettingsPage() {
                     onChange={(e) => setAssignedTask(e.target.value)}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-indigo-500"
                   >
-                    <option value="ALL_IN_ONE">🚀 All-In-One (Research, Script, Images, Voice, SEO)</option>
-                    <option value="TEXT_RESEARCH_SCRIPT">📝 Research & Content Writing (Text LLM)</option>
-                    <option value="IMAGE_GENERATION">🎨 Visual Scene & Image B-Roll Generation</option>
-                    <option value="VOICE_TTS">🔊 Voice Narration Synthesizer (TTS)</option>
+                    <option value="ALL_IN_ONE">🚀 All-In-One (Master Key / All Pipeline Tasks)</option>
+                    <option value="script">🎯 Scriptwriting (YouTube Script & Outline)</option>
+                    <option value="research">🔍 Topic Research & Subtopic Discovery</option>
+                    <option value="fact-check">🛡️ Fact Checking & Verification</option>
+                    <option value="seo">📈 SEO Metadata, Titles & Tags</option>
+                    <option value="speech">🎙️ Voice Narration (TTS Voice Synthesizer)</option>
+                    <option value="image">🖼️ Visual Scene & Image B-Roll</option>
+                    <option value="thumbnail">🎨 YouTube Thumbnail Design</option>
+                    <option value="video">🎬 Video Provider Rendering</option>
                   </select>
                 </div>
 

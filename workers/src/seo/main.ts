@@ -1,8 +1,7 @@
 import 'dotenv/config';
 import { Job } from 'bullmq';
 import { createWorker, prisma, emitJobProgress, enqueueNextStep } from '../shared/worker.base';
-import { callTextProvider } from '../shared/ai-helper';
-import { CryptoService } from '../shared/crypto-helper';
+import { callTextProvider, resolveKeyForTask } from '../shared/ai-helper';
 import { QUEUE_NAMES, PipelineStep } from '@acf/shared';
 
 createWorker(QUEUE_NAMES.SEO, async (job: Job) => {
@@ -12,21 +11,18 @@ createWorker(QUEUE_NAMES.SEO, async (job: Job) => {
   const video = await prisma.video.findUniqueOrThrow({ where: { id: videoId }, include: { script: true } });
   const scriptContent = video.script?.content as any;
 
-  const provider = await prisma.provider.findFirst({
-    where: { enabled: true, capabilities: { has: 'TEXT' } },
-    include: { apiKeys: { where: { isActive: true }, take: 1 } },
-  });
+  const resolvedKey = await resolveKeyForTask(prisma, 'seo');
 
   let seoData = { title: video.title, description: '', tags: [] as string[], keywords: [] as string[], seoScore: 80 };
 
-  if (provider && provider.apiKeys.length > 0) {
-    const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
+  if (resolvedKey) {
+    const { providerName, apiKey, model, customBaseURL } = resolvedKey;
 
     const prompt = `Optimize this YouTube video for SEO. Return JSON: { title, description, tags: string[], keywords: string[], seoScore: number }
 Video title: ${video.title}
 Script summary: ${JSON.stringify(scriptContent?.sections?.slice(0, 2) || []).substring(0, 1000)}`;
 
-    const response = await callTextProvider(provider.name, apiKey, prompt).catch(() => '{}');
+    const response = await callTextProvider(providerName, apiKey, prompt, undefined, model, customBaseURL).catch(() => '{}');
 
     try {
       const parsed = JSON.parse(response.replace(/```json\n?|\n?```/g, '').trim());

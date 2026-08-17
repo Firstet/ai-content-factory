@@ -34,28 +34,33 @@ createWorker(QUEUE_NAMES.THUMBNAIL, async (job: Job) => {
     const video = await prisma.video.findUniqueOrThrow({ where: { id: videoId }, include: { script: true } });
     const scriptContent = video.script?.content as any;
 
-    const provider = await prisma.provider.findFirst({
-      where: { enabled: true, capabilities: { has: 'IMAGE' } },
-      include: { apiKeys: { where: { isActive: true }, take: 1 } },
-    });
+    const resolvedThumbKey = await resolveKeyForTask(prisma, 'thumbnail');
+    const resolvedImageKey = resolvedThumbKey || await resolveKeyForTask(prisma, 'image');
+    const resolvedTextKey = await resolveKeyForTask(prisma, 'script');
 
     let thumbnailUrl = '';
 
-    if (provider && provider.apiKeys.length > 0) {
-      const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
+    if (resolvedImageKey) {
+      const { providerName, apiKey, model } = resolvedImageKey;
 
       // Generate thumbnail copy text
-      const thumbnailText = await callTextProvider(
-        provider.name, apiKey,
-        `Create a SINGLE compelling YouTube thumbnail text (max 4 bold words) for: "${video.title}". Return only the text, nothing else.`,
-      ).catch(() => video.title.split(' ').slice(0, 3).join(' '));
+      let thumbnailText = video.title.split(' ').slice(0, 3).join(' ');
+      if (resolvedTextKey) {
+        thumbnailText = await callTextProvider(
+          resolvedTextKey.providerName, resolvedTextKey.apiKey,
+          `Create a SINGLE compelling YouTube thumbnail text (max 4 bold words) for: "${video.title}". Return only the text, nothing else.`,
+          undefined,
+          resolvedTextKey.model,
+          resolvedTextKey.customBaseURL,
+        ).catch(() => video.title.split(' ').slice(0, 3).join(' '));
+      }
 
       // Generate thumbnail image
       const prompt = `YouTube thumbnail: ${video.title}. Dramatic, vibrant, high contrast, 16:9, professional YouTube thumbnail style. Bold text: "${thumbnailText}". Eye-catching, photorealistic.`;
 
       await emitJobProgress(videoId, PipelineStep.THUMBNAIL, 40, 'Generating thumbnail image...');
 
-      const urls = await callImageProvider(provider.name, apiKey, prompt).catch(() => []);
+      const urls = await callImageProvider(providerName, apiKey, prompt, model).catch(() => []);
 
       if (urls.length > 0) {
         const imgData = await axios.get(urls[0], { responseType: 'arraybuffer' });

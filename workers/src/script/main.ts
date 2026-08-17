@@ -4,8 +4,7 @@
 import 'dotenv/config';
 import { Job } from 'bullmq';
 import { createWorker, prisma, emitJobProgress, enqueueNextStep } from '../shared/worker.base';
-import { callTextProvider } from '../shared/ai-helper';
-import { CryptoService } from '../shared/crypto-helper';
+import { callTextProvider, resolveKeyForTask } from '../shared/ai-helper';
 import { QUEUE_NAMES, PipelineStep } from '@acf/shared';
 
 interface ScriptJobData {
@@ -37,20 +36,14 @@ createWorker(QUEUE_NAMES.SCRIPT, async (job: Job<ScriptJobData>) => {
     where: { category: 'script', isActive: true, OR: [{ brandId }, { isGlobal: true }] },
   });
 
-  // Get AI provider
-  const provider = await prisma.provider.findFirst({
-    where: { enabled: true, apiKeys: { some: { isActive: true } } },
-    include: { apiKeys: { where: { isActive: true }, take: 1 } },
-  });
+  // Dynamically resolve API key assigned to 'script' task
+  const resolvedKey = await resolveKeyForTask(prisma, 'script');
 
   let scriptContent: any = null;
   let rawText = '';
 
-  if (provider && provider.apiKeys.length > 0) {
-    const activeKey = provider.apiKeys[0];
-    const apiKey = CryptoService.decrypt(activeKey.encryptedKey);
-    const customBaseURL = activeKey.platform || provider.baseUrl || undefined;
-    
+  if (resolvedKey) {
+    const { providerName, displayName, apiKey, model, customBaseURL } = resolvedKey;
     const systemPrompt = `You are an expert YouTube scriptwriter. Always return valid JSON.`;
     
     let promptText = promptTemplate?.template || `Write a comprehensive ${targetDuration}-minute YouTube script about: "${topic}"
@@ -78,9 +71,9 @@ Return ONLY valid JSON in this exact structure:
   "keywords": ["keyword1", "keyword2", "keyword3"]
 }`;
 
-    await emitJobProgress(videoId, PipelineStep.SCRIPT, 30, `Writing with ${provider.displayName}...`);
+    await emitJobProgress(videoId, PipelineStep.SCRIPT, 30, `Writing with ${displayName}...`);
 
-    const response = await callTextProvider(provider.name, apiKey, promptText, systemPrompt, undefined, customBaseURL);
+    const response = await callTextProvider(providerName, apiKey, promptText, systemPrompt, model, customBaseURL);
     rawText = response;
 
     try {

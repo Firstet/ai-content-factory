@@ -6,8 +6,7 @@ import { Job } from 'bullmq';
 import axios from 'axios';
 import * as Minio from 'minio';
 import { createWorker, prisma, emitJobProgress, enqueueNextStep } from '../shared/worker.base';
-import { callImageProvider } from '../shared/ai-helper';
-import { CryptoService } from '../shared/crypto-helper';
+import { callImageProvider, resolveKeyForTask } from '../shared/ai-helper';
 import { QUEUE_NAMES, PipelineStep } from '@acf/shared';
 
 const minioClient = new Minio.Client({
@@ -30,10 +29,7 @@ createWorker(QUEUE_NAMES.IMAGE, async (job: Job) => {
   const scriptContent = script?.content as any;
   const allSections: any[] = sections.length ? sections : (scriptContent?.sections || []);
 
-  const provider = await prisma.provider.findFirst({
-    where: { enabled: true, apiKeys: { some: { isActive: true } } },
-    include: { apiKeys: { where: { isActive: true }, take: 1 } },
-  });
+  const resolvedKey = await resolveKeyForTask(prisma, 'image');
 
   const imageUrls: string[] = [];
 
@@ -54,9 +50,8 @@ createWorker(QUEUE_NAMES.IMAGE, async (job: Job) => {
       let key = `videos/${videoId}/images/scene-${i + 1}.jpg`;
 
       try {
-        if (provider && provider.name === 'OPENAI' && provider.apiKeys.length > 0) {
-          const apiKey = CryptoService.decrypt(provider.apiKeys[0].encryptedKey);
-          const urls = await callImageProvider(provider.name, apiKey, prompt);
+        if (resolvedKey && resolvedKey.providerName === 'OPENAI') {
+          const urls = await callImageProvider(resolvedKey.providerName, resolvedKey.apiKey, prompt, resolvedKey.model);
           if (urls.length > 0) {
             const imgResponse = await axios.get(urls[0], { responseType: 'arraybuffer', timeout: 15000 });
             imageBuffer = Buffer.from(imgResponse.data);
