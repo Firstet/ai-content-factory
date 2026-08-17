@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_INTERNAL_URL = process.env.INTERNAL_API_URL || 'http://api:3001/api';
-
 async function proxyRequest(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
 ) {
-  let destinationUrl = '';
+  let lastError: any = null;
 
   try {
     const rawParams = await Promise.resolve(context?.params);
@@ -14,8 +12,13 @@ async function proxyRequest(
     const pathString = Array.isArray(path) ? path.join('/') : (path || '');
     const searchParams = request.nextUrl.search || '';
 
-    const targetHost = API_INTERNAL_URL.replace(/\/$/, '');
-    destinationUrl = `${targetHost}/${pathString}${searchParams}`;
+    const candidates = Array.from(new Set([
+      process.env.INTERNAL_API_URL,
+      'http://api:3001/api',
+      'http://127.0.0.1:3001/api',
+      'http://localhost:3001/api',
+      process.env.NEXT_PUBLIC_API_URL,
+    ].filter(Boolean) as string[]));
 
     const headers = new Headers();
     request.headers.forEach((value, key) => {
@@ -39,30 +42,42 @@ async function proxyRequest(
       }
     }
 
-    const response = await fetch(destinationUrl, {
-      method: request.method,
-      headers,
-      body,
-      cache: 'no-store',
-    });
+    for (const baseUrl of candidates) {
+      const targetHost = baseUrl.replace(/\/$/, '');
+      const destinationUrl = `${targetHost}/${pathString}${searchParams}`;
 
-    const data = await response.arrayBuffer();
+      try {
+        const response = await fetch(destinationUrl, {
+          method: request.method,
+          headers,
+          body,
+          cache: 'no-store',
+        });
 
-    const responseHeaders = new Headers();
-    response.headers.forEach((value, key) => {
-      const keyLower = key.toLowerCase();
-      if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(keyLower)) {
-        responseHeaders.set(key, value);
+        const data = await response.arrayBuffer();
+
+        const responseHeaders = new Headers();
+        response.headers.forEach((value, key) => {
+          const keyLower = key.toLowerCase();
+          if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(keyLower)) {
+            responseHeaders.set(key, value);
+          }
+        });
+
+        return new NextResponse(data, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: responseHeaders,
+        });
+      } catch (err: any) {
+        console.warn(`[API Proxy] Connection to ${destinationUrl} failed, trying candidate:`, err.message);
+        lastError = err;
       }
-    });
+    }
 
-    return new NextResponse(data, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: responseHeaders,
-    });
+    throw lastError || new Error('All internal API proxy endpoints failed');
   } catch (err: any) {
-    console.error(`[API Proxy Error] Failed to proxy request to ${destinationUrl || 'unknown'}:`, err);
+    console.error(`[API Proxy Fatal Error]:`, err);
     return NextResponse.json(
       { message: `API Server Proxy Error: ${err.message || 'Internal connection error'}` },
       { status: 502 }
