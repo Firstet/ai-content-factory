@@ -14,27 +14,35 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
   try {
     const headers = new Headers();
     request.headers.forEach((value, key) => {
-      if (!['host', 'content-length'].includes(key.toLowerCase())) {
+      const keyLower = key.toLowerCase();
+      if (!['host', 'content-length', 'connection'].includes(keyLower)) {
         headers.set(key, value);
       }
     });
 
     let body: ArrayBuffer | undefined = undefined;
     if (!['GET', 'HEAD'].includes(request.method.toUpperCase())) {
-      body = await request.arrayBuffer();
+      const buf = await request.arrayBuffer();
+      if (buf && buf.byteLength > 0) {
+        body = buf;
+      } else {
+        headers.delete('content-type');
+      }
     }
 
     const response = await fetch(destinationUrl, {
       method: request.method,
       headers,
       body,
+      cache: 'no-store',
     });
 
     const data = await response.arrayBuffer();
 
     const responseHeaders = new Headers();
     response.headers.forEach((value, key) => {
-      if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(key.toLowerCase())) {
+      const keyLower = key.toLowerCase();
+      if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(keyLower)) {
         responseHeaders.set(key, value);
       }
     });
