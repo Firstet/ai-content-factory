@@ -44,15 +44,38 @@ export class ApiKeysService {
         });
       }
 
-      // Automatically test connection & discover models
-      const discoveryResult = await this.discovery.discover(sanitizedName, rawKey, dto.baseUrl);
+      // Automatically test connection & discover models safely
+      let discoveryResult = {
+        status: 'UNTESTED' as const,
+        models: ['default'],
+        capabilities: ['TEXT_GENERATION'],
+        error: undefined as string | undefined,
+      };
+
+      try {
+        const result = await this.discovery.discover(sanitizedName, rawKey, dto.baseUrl);
+        discoveryResult = {
+          status: result.status,
+          models: result.models || ['default'],
+          capabilities: result.capabilities || ['TEXT_GENERATION'],
+          error: result.error,
+        };
+      } catch (discErr: any) {
+        console.warn('[ApiKeysService] Discovery test failed silently:', discErr.message);
+        discoveryResult = {
+          status: 'CONNECTION_FAILED',
+          models: ['default'],
+          capabilities: ['TEXT_GENERATION'],
+          error: discErr.message || 'Connection test timeout',
+        };
+      }
 
       const apiKey = await this.prisma.apiKey.create({
         data: {
           providerId: provider.id,
           label: dto.label || `${provider.displayName} Credential`,
           encryptedKey,
-          baseUrl: dto.baseUrl || provider.baseUrl,
+          baseUrl: dto.baseUrl || provider.baseUrl || null,
           platform: dto.platform || `${dto.baseUrl || provider.baseUrl || ''}|protocol:openai_compatible`,
           keyType: dto.keyType || 'api',
           status: discoveryResult.status,
