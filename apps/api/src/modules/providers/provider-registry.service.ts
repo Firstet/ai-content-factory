@@ -17,8 +17,6 @@ export interface ResolvedProviderOptions {
   model?: string;
   baseUrl?: string;
   credentialId?: string;
-}
-
 @Injectable()
 export class ProviderRouterService {
   private readonly logger = new Logger(ProviderRouterService.name);
@@ -208,3 +206,4 @@ export class ProviderRouterService {
   }
 }
 
+export { ProviderRouterService as ProviderRegistry };
