@@ -45,11 +45,16 @@ export class ApiKeysService {
       }
 
       // Automatically test connection & discover models safely
-      let discoveryResult = {
-        status: 'UNTESTED' as const,
+      let discoveryResult: {
+        status: string;
+        models: string[];
+        capabilities: string[];
+        error?: string;
+      } = {
+        status: 'UNTESTED',
         models: ['default'],
         capabilities: ['TEXT_GENERATION'],
-        error: undefined as string | undefined,
+        error: undefined,
       };
 
       try {
