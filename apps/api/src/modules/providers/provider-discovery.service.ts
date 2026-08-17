@@ -89,6 +89,7 @@ export class ProviderDiscoveryService {
         };
       } else {
         const errorText = await res.text();
+        this.logger.warn(`[EXTERNAL_PROVIDER_HTTP_ERROR] ${nameUpper} responded with HTTP ${res.status}`);
         return {
           status: 'CONNECTION_FAILED',
           models: [this.getDefaultModel(nameUpper)],
@@ -97,14 +98,25 @@ export class ProviderDiscoveryService {
         };
       }
     } catch (err: any) {
-      this.logger.warn(`Connection test failed for ${nameUpper}: ${err.message}`);
+      this.logger.error('[EXTERNAL_PROVIDER_FETCH_FAILED]', {
+        provider: nameUpper,
+        targetUrl,
+        errorName: err instanceof Error ? err.name : undefined,
+        errorMessage: err instanceof Error ? err.message : undefined,
+        cause: err instanceof Error ? (err as any).cause : undefined,
+        causeCode: (err as any)?.cause?.code,
+        causeAddress: (err as any)?.cause?.address,
+        causePort: (err as any)?.cause?.port,
+        causeSyscall: (err as any)?.cause?.syscall,
+      });
+
       return {
         status: 'CONNECTION_FAILED',
         models: [this.getDefaultModel(nameUpper)],
         capabilities: this.detectCapabilities(nameUpper, []),
         error: err.name === 'AbortError' || err.name === 'TimeoutError'
           ? 'Connection test timed out after 3s'
-          : (err.message || 'Network error / Host unreachable'),
+          : ((err as any)?.cause?.code ? `${(err as any).cause.code}: ${err.message}` : (err.message || 'Network error / Host unreachable')),
       };
     }
   }
