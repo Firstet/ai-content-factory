@@ -37,9 +37,12 @@ import { VoicePreviewPlayer, DEFAULT_VOICES } from '@/components/common/VoicePre
 import { ContentPreviewModal } from '@/components/common/ContentPreviewModal';
 
 const DEFAULT_PROVIDERS = [
+  // --- LLM / TEXT & RESEARCH ---
   {
     name: 'NVIDIA',
     displayName: 'NVIDIA NIM AI (Nemotron, Llama 3.3)',
+    category: 'LLM',
+    capabilities: ['LLM', 'Text'],
     placeholder: 'nvapi-...',
     defaultBaseUrl: 'https://integrate.api.nvidia.com/v1',
     defaultModel: 'nvidia/nvidia-nemotron-nano-9b-v2',
@@ -47,7 +50,9 @@ const DEFAULT_PROVIDERS = [
   },
   {
     name: 'OPENAI_COMPATIBLE',
-    displayName: 'OpenAI Compatible (DeepSeek, Groq, Anyscale, LM Studio)',
+    displayName: 'OpenAI Compatible (DeepSeek, Groq, Anyscale)',
+    category: 'LLM',
+    capabilities: ['LLM', 'Text'],
     placeholder: 'sk-...',
     defaultBaseUrl: 'https://api.deepseek.com/v1',
     defaultModel: 'deepseek-chat',
@@ -56,6 +61,8 @@ const DEFAULT_PROVIDERS = [
   {
     name: 'OPENAI',
     displayName: 'OpenAI (Official GPT-4o, DALL-E 3, TTS)',
+    category: 'LLM',
+    capabilities: ['LLM', 'Text', 'Image', 'Speech'],
     placeholder: 'sk-proj-...',
     defaultBaseUrl: 'https://api.openai.com/v1',
     defaultModel: 'gpt-4o',
@@ -64,6 +71,8 @@ const DEFAULT_PROVIDERS = [
   {
     name: 'GEMINI',
     displayName: 'Google Gemini (Free Tier Available)',
+    category: 'LLM',
+    capabilities: ['LLM', 'Text'],
     placeholder: 'AIzaSy...',
     defaultBaseUrl: 'https://generativelanguage.googleapis.com',
     defaultModel: 'gemini-1.5-flash',
@@ -72,6 +81,8 @@ const DEFAULT_PROVIDERS = [
   {
     name: 'ANTHROPIC',
     displayName: 'Anthropic Claude 3.5 Sonnet',
+    category: 'LLM',
+    capabilities: ['LLM', 'Text'],
     placeholder: 'sk-ant-...',
     defaultBaseUrl: 'https://api.anthropic.com',
     defaultModel: 'claude-3-5-sonnet-20241022',
@@ -80,14 +91,114 @@ const DEFAULT_PROVIDERS = [
   {
     name: 'OPENROUTER',
     displayName: 'OpenRouter (Access 100+ Free Models)',
+    category: 'LLM',
+    capabilities: ['LLM', 'Text'],
     placeholder: 'sk-or-...',
     defaultBaseUrl: 'https://openrouter.ai/api/v1',
     defaultModel: 'meta-llama/llama-3.1-70b-instruct',
     task: 'TEXT_RESEARCH_SCRIPT',
   },
   {
+    name: 'OLLAMA',
+    displayName: 'Ollama (Local Self-Hosted LLM)',
+    category: 'LLM',
+    capabilities: ['LLM', 'Text'],
+    placeholder: 'Not required (Local Server)',
+    defaultBaseUrl: 'http://localhost:11434',
+    defaultModel: 'llama3.1',
+    task: 'TEXT_RESEARCH_SCRIPT',
+  },
+
+  // --- IMAGE GENERATION (B-ROLL & THUMBNAILS) ---
+  {
+    name: 'POLLINATIONS_IMAGE',
+    displayName: 'Pollinations AI (Free Image B-Roll & Thumbnails)',
+    category: 'IMAGE',
+    capabilities: ['Image', 'B-Roll'],
+    placeholder: 'Not required (100% Free)',
+    defaultBaseUrl: 'https://image.pollinations.ai',
+    defaultModel: 'flux',
+    task: 'IMAGE_GENERATION',
+  },
+  {
+    name: 'STABILITY_AI',
+    displayName: 'Stability AI (SDXL & Flux Pro API)',
+    category: 'IMAGE',
+    capabilities: ['Image', 'B-Roll'],
+    placeholder: 'sk-...',
+    defaultBaseUrl: 'https://api.stability.ai/v1',
+    defaultModel: 'sd3-medium',
+    task: 'IMAGE_GENERATION',
+  },
+  {
+    name: 'REPLICATE',
+    displayName: 'Replicate AI (Flux Schnell / Dev / SDXL)',
+    category: 'IMAGE',
+    capabilities: ['Image', 'B-Roll'],
+    placeholder: 'r8_...',
+    defaultBaseUrl: 'https://api.replicate.com/v1',
+    defaultModel: 'black-forest-labs/flux-schnell',
+    task: 'IMAGE_GENERATION',
+  },
+
+  // --- VIDEO GENERATION (MOTION CLIPS & SCENES) ---
+  {
+    name: 'POLLINATIONS_VIDEO',
+    displayName: 'Pollinations AI Video (100% Free Motion Clips)',
+    category: 'VIDEO',
+    capabilities: ['Video', 'Clips'],
+    placeholder: 'Not required (100% Free)',
+    defaultBaseUrl: 'https://video.pollinations.ai',
+    defaultModel: 'pollinations-video-v1',
+    task: 'VIDEO_GENERATION',
+  },
+  {
+    name: 'RUNWAY_GEN2',
+    displayName: 'Runway AI (Gen-2 / Gen-3 Alpha Video)',
+    category: 'VIDEO',
+    capabilities: ['Video', 'Clips'],
+    placeholder: 'key_...',
+    defaultBaseUrl: 'https://api.runwayml.com/v1',
+    defaultModel: 'gen3a_turbo',
+    task: 'VIDEO_GENERATION',
+  },
+  {
+    name: 'KLING_AI',
+    displayName: 'Kling AI (High-Definition Motion Video)',
+    category: 'VIDEO',
+    capabilities: ['Video', 'Clips'],
+    placeholder: 'kling_...',
+    defaultBaseUrl: 'https://api.klingai.com/v1',
+    defaultModel: 'kling-v1.5',
+    task: 'VIDEO_GENERATION',
+  },
+  {
+    name: 'LUMA_DREAM_MACHINE',
+    displayName: 'Luma Dream Machine (Cinematic Clips)',
+    category: 'VIDEO',
+    capabilities: ['Video', 'Clips'],
+    placeholder: 'luma_...',
+    defaultBaseUrl: 'https://api.lumalabs.ai/v1',
+    defaultModel: 'dream-machine-v1',
+    task: 'VIDEO_GENERATION',
+  },
+
+  // --- VOICE & AUDIO SYNTHESIS (TTS) ---
+  {
+    name: 'PIPER_TTS',
+    displayName: 'Piper TTS (100% Free Studio Neural Voice)',
+    category: 'VOICE',
+    capabilities: ['Voice', 'Speech'],
+    placeholder: 'Not required (100% Free)',
+    defaultBaseUrl: 'http://localhost:5002',
+    defaultModel: 'en_US-lessac-medium',
+    task: 'VOICE_TTS',
+  },
+  {
     name: 'ELEVENLABS',
     displayName: 'ElevenLabs Voice AI Studio',
+    category: 'VOICE',
+    capabilities: ['Voice', 'Speech'],
     placeholder: 'el-...',
     defaultBaseUrl: 'https://api.elevenlabs.io',
     defaultModel: 'eleven_multilingual_v2',
@@ -103,6 +214,7 @@ export default function CreatorSettingsPage() {
   const [keys, setKeys] = useState<any[]>([]);
   const [dbProviders, setDbProviders] = useState<any[]>([]);
   const [loadingKeys, setLoadingKeys] = useState(true);
+  const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'LLM' | 'IMAGE' | 'VIDEO' | 'VOICE'>('ALL');
   const [selectedProviderName, setSelectedProviderName] = useState('NVIDIA');
   const [label, setLabel] = useState('NVIDIA NIM Key');
   const [keyInput, setKeyInput] = useState('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');
@@ -391,24 +503,52 @@ export default function CreatorSettingsPage() {
           <div className="space-y-6">
             {/* Added & Supported AI Providers Catalog */}
             <div className="glass-panel p-6 rounded-3xl border border-white/10 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
                 <div>
                   <h2 className="text-base font-black text-white flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-amber-400" />
-                    Added & Supported AI Providers ({dbProviders.length || DEFAULT_PROVIDERS.length})
+                    Added & Supported AI Providers ({DEFAULT_PROVIDERS.length})
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Operational status of all AI text, image, and voice providers integrated into your Studio.
+                    Operational status of all AI text/LLM, image, video, and voice providers integrated into your Studio.
                   </p>
                 </div>
-                <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 w-fit">
                   AUTO-DETECTED
                 </span>
               </div>
 
+              {/* Category Filter Pills */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 pb-2">
+                {[
+                  { id: 'ALL', label: '🌟 All Providers', count: DEFAULT_PROVIDERS.length },
+                  { id: 'LLM', label: '📝 LLM & Text', count: DEFAULT_PROVIDERS.filter((p) => p.category === 'LLM').length },
+                  { id: 'IMAGE', label: '🎨 Image & B-Roll', count: DEFAULT_PROVIDERS.filter((p) => p.category === 'IMAGE').length },
+                  { id: 'VIDEO', label: '🎬 Video & Motion Clips', count: DEFAULT_PROVIDERS.filter((p) => p.category === 'VIDEO').length },
+                  { id: 'VOICE', label: '🎙️ Voice & Audio TTS', count: DEFAULT_PROVIDERS.filter((p) => p.category === 'VOICE').length },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setCategoryFilter(cat.id as any)}
+                    className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      categoryFilter === cat.id
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20 border border-indigo-400'
+                        : 'bg-slate-900/80 text-slate-400 hover:text-white border border-white/5'
+                    }`}
+                  >
+                    <span>{cat.label}</span>
+                    <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-black/30 font-mono">
+                      {cat.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                {(dbProviders.length > 0 ? dbProviders : DEFAULT_PROVIDERS).map((p) => {
+                {DEFAULT_PROVIDERS.filter((p) => categoryFilter === 'ALL' || p.category === categoryFilter).map((p) => {
                   const pName = p.name || p.displayName;
+                  const dbMatch = dbProviders.find((dbp) => dbp.name === p.name);
                   const matchingKeys = keys.filter(
                     (k) => k.provider?.name === p.name || k.providerId === p.name || k.providerId === p.id
                   );
@@ -446,7 +586,7 @@ export default function CreatorSettingsPage() {
                       </div>
 
                       <div className="text-[10px] text-slate-400 font-mono truncate">
-                        {p.defaultBaseUrl || p.baseUrl || 'https://integrate.api.nvidia.com/v1'}
+                        {p.defaultBaseUrl || dbMatch?.baseUrl || p.baseUrl || 'https://integrate.api.nvidia.com/v1'}
                       </div>
 
                       <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px]">
