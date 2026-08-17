@@ -137,7 +137,7 @@ export class ProviderDiscoveryService {
     }
   }
 
-  private getDefaultModel(providerName: string): string {
+  public getDefaultModel(providerName: string): string {
     switch (providerName) {
       case 'NVIDIA':
         return 'nvidia/nvidia-nemotron-nano-9b-v2';
@@ -164,7 +164,7 @@ export class ProviderDiscoveryService {
     }
   }
 
-  private detectCapabilities(providerName: string, models: string[]): string[] {
+  public detectCapabilities(providerName: string, models: string[]): string[] {
     const caps = ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SEO_RESEARCH', 'SCRIPTWRITING', 'COPYWRITING'];
     if (providerName === 'OPENAI') caps.push('IMAGE_GENERATION', 'TEXT_TO_SPEECH', 'VISION');
     if (providerName === 'GEMINI') caps.push('IMAGE_GENERATION', 'VISION');

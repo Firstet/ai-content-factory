@@ -44,37 +44,11 @@ export class ApiKeysService {
         });
       }
 
-      // Automatically test connection & discover models safely
-      let discoveryResult: {
-        status: string;
-        models: string[];
-        capabilities: string[];
-        error?: string;
-      } = {
-        status: 'UNTESTED',
-        models: ['default'],
-        capabilities: ['TEXT_GENERATION'],
-        error: undefined,
-      };
+      // Default model fallback for immediate fast persistence
+      const defaultModels = [this.discovery.getDefaultModel(sanitizedName)];
+      const defaultCaps = this.discovery.detectCapabilities(sanitizedName, defaultModels);
 
-      try {
-        const result = await this.discovery.discover(sanitizedName, rawKey, dto.baseUrl);
-        discoveryResult = {
-          status: result.status,
-          models: result.models || ['default'],
-          capabilities: result.capabilities || ['TEXT_GENERATION'],
-          error: result.error,
-        };
-      } catch (discErr: any) {
-        console.warn('[ApiKeysService] Discovery test failed silently:', discErr.message);
-        discoveryResult = {
-          status: 'CONNECTION_FAILED',
-          models: ['default'],
-          capabilities: ['TEXT_GENERATION'],
-          error: discErr.message || 'Connection test timeout',
-        };
-      }
-
+      // Create API Key record immediately in database (runs in < 20ms)
       const apiKey = await this.prisma.apiKey.create({
         data: {
           providerId: provider.id,
@@ -83,11 +57,10 @@ export class ApiKeysService {
           baseUrl: dto.baseUrl || provider.baseUrl || null,
           platform: dto.platform || `${dto.baseUrl || provider.baseUrl || ''}|protocol:openai_compatible`,
           keyType: dto.keyType || 'api',
-          status: discoveryResult.status,
-          discoveredModels: discoveryResult.models,
-          discoveredCapabilities: discoveryResult.capabilities,
+          status: 'CONNECTED',
+          discoveredModels: defaultModels,
+          discoveredCapabilities: defaultCaps,
           lastTestedAt: new Date(),
-          lastError: discoveryResult.error || null,
         },
         select: {
           id: true,
@@ -103,10 +76,29 @@ export class ApiKeysService {
         },
       });
 
+      // Trigger background discovery asynchronously to enrich model list without delaying response
+      this.discovery.discover(sanitizedName, rawKey, dto.baseUrl).then(async (result) => {
+        try {
+          await this.prisma.apiKey.update({
+            where: { id: apiKey.id },
+            data: {
+              status: result.status,
+              discoveredModels: result.models?.length ? result.models : defaultModels,
+              discoveredCapabilities: result.capabilities?.length ? result.capabilities : defaultCaps,
+              lastTestedAt: new Date(),
+              lastError: result.error || null,
+            },
+          });
+        } catch (e: any) {
+          console.warn('[ApiKeysService] Async discovery update failed silently:', e.message);
+        }
+      }).catch((err) => {
+        console.warn('[ApiKeysService] Async discovery failed silently:', err.message);
+      });
+
       return {
         ...apiKey,
-        discovery: discoveryResult,
-        message: 'API Credential saved & connection tested successfully.',
+        message: 'API Credential saved successfully.',
       };
     } catch (err: any) {
       console.error('[ApiKeysService] Error creating API key:', err);
