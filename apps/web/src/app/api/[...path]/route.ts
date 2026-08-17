@@ -4,7 +4,7 @@ const API_INTERNAL_URL = process.env.INTERNAL_API_URL || 'http://api:3001/api';
 
 async function proxyRequest(
   request: NextRequest,
-  context: { params: { path?: string[] } | Promise<{ path?: string[] }> }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   let destinationUrl = '';
 
