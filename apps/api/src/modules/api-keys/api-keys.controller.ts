@@ -32,6 +32,11 @@ export class ApiKeysController {
     return this.service.toggle(id, isActive);
   }
 
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: Partial<CreateApiKeyDto>) {
+    return this.service.update(id, dto);
+  }
+
   @Delete(':id')
   delete(@Param('id') id: string) {
     return this.service.delete(id);

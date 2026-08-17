@@ -11,9 +11,9 @@ export class CreateApiKeyDto {
   label: string;
 
   @ApiProperty({ example: 'nvapi-...', description: 'The raw API key (will be encrypted)' })
+  @IsOptional()
   @IsString()
-  @MinLength(4)
-  key: string;
+  key?: string;
 
   @ApiProperty({ required: false, description: 'Base URL endpoint (e.g. https://integrate.api.nvidia.com/v1)' })
   @IsOptional()

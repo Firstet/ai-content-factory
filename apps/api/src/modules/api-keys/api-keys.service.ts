@@ -18,24 +18,27 @@ export class ApiKeysService {
    */
   async create(dto: CreateApiKeyDto) {
     try {
-      const encryptedKey = this.crypto.encrypt(dto.key);
+      const rawKey = dto.key && dto.key.trim() !== '' ? dto.key : 'FREE_LOCAL_ENGINE';
+      const encryptedKey = this.crypto.encrypt(rawKey);
 
       // Safe provider lookup preventing invalid UUID cast errors in PostgreSQL
-      const providerName = dto.providerId.toUpperCase();
+      const providerIdStr = dto.providerId || 'CUSTOM_AI';
+      const sanitizedName = providerIdStr.replace(/[^a-zA-Z0-9_]/g, '_').toUpperCase();
+
       let provider = await this.prisma.provider.findFirst({
         where: isUuid(dto.providerId)
-          ? { OR: [{ id: dto.providerId }, { name: providerName }] }
-          : { name: providerName },
+          ? { OR: [{ id: dto.providerId }, { name: sanitizedName }] }
+          : { name: sanitizedName },
       });
 
       if (!provider) {
         provider = await this.prisma.provider.create({
           data: {
-            name: providerName,
-            displayName: dto.providerId,
+            name: sanitizedName,
+            displayName: dto.label || dto.providerId,
             enabled: true,
-            capabilities: ['llm', 'text'],
-            preferredFor: ['script', 'research'],
+            capabilities: ['llm', 'text', 'image', 'speech', 'video'],
+            preferredFor: ['script', 'research', 'image', 'speech', 'video'],
           },
         });
       }
@@ -43,9 +46,9 @@ export class ApiKeysService {
       const apiKey = await this.prisma.apiKey.create({
         data: {
           providerId: provider.id,
-          label: dto.label,
+          label: dto.label || `${provider.displayName} Key`,
           encryptedKey,
-          platform: dto.platform,
+          platform: dto.platform || 'https://integrate.api.nvidia.com/v1|model:default|task:ALL_IN_ONE',
           keyType: dto.keyType || 'api',
         },
         select: { id: true, label: true, providerId: true, isActive: true, createdAt: true },
@@ -108,6 +111,24 @@ export class ApiKeysService {
       where: { id },
       data: { isActive },
       select: { id: true, isActive: true },
+    });
+  }
+
+  async update(id: string, dto: Partial<CreateApiKeyDto>) {
+    const existing = await this.prisma.apiKey.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException(`API key ${id} not found`);
+
+    const updateData: any = {};
+    if (dto.label) updateData.label = dto.label;
+    if (dto.platform) updateData.platform = dto.platform;
+    if (dto.key && dto.key.trim() !== '' && dto.key !== 'FREE_LOCAL_ENGINE') {
+      updateData.encryptedKey = this.crypto.encrypt(dto.key);
+    }
+
+    return this.prisma.apiKey.update({
+      where: { id },
+      data: updateData,
+      select: { id: true, label: true, providerId: true, isActive: true, platform: true },
     });
   }
 

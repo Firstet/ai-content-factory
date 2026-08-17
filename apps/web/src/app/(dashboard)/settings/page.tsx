@@ -30,6 +30,7 @@ import {
   Tags,
   Cpu,
   RefreshCw,
+  Pencil,
 } from 'lucide-react';
 import { useToast } from '@/components/common/Toast';
 import { api } from '@/lib/api';
@@ -224,6 +225,9 @@ export default function CreatorSettingsPage() {
   const [showKey, setShowKey] = useState(false);
   const [savingKey, setSavingKey] = useState(false);
 
+  const [customProviderName, setCustomProviderName] = useState('');
+  const [editingKeyId, setEditingKeyId] = useState<string | null>(null);
+
   // Platform Content Ratios
   const [videoRatio, setVideoRatio] = useState(80);
   const [postsPerWeek, setPostsPerWeek] = useState(7);
@@ -246,6 +250,12 @@ export default function CreatorSettingsPage() {
 
   // Sync Provider change to default URL, model, and label
   useEffect(() => {
+    if (selectedProviderName === 'CUSTOM_AI_PROVIDER') {
+      setBaseUrlInput('https://api.your-custom-proxy.com/v1');
+      setModelNameInput('custom-model-id');
+      setLabel('Custom AI Provider Key');
+      return;
+    }
     const found = DEFAULT_PROVIDERS.find((p) => p.name === selectedProviderName);
     if (found) {
       setBaseUrlInput(found.defaultBaseUrl);
@@ -293,18 +303,34 @@ export default function CreatorSettingsPage() {
 
   const handleSaveKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyInput) return;
     setSavingKey(true);
+    const targetProviderId = selectedProviderName === 'CUSTOM_AI_PROVIDER'
+      ? (customProviderName.trim() || 'Custom AI Provider')
+      : selectedProviderName;
+
+    const keyToSave = keyInput && keyInput.trim() !== '' ? keyInput : 'FREE_LOCAL_ENGINE';
+
     try {
-      await api.post('/api-keys', {
-        providerId: selectedProviderName,
-        label: label || `${selectedProviderName} Key`,
-        key: keyInput,
-        platform: `${baseUrlInput}|model:${modelNameInput}|task:${assignedTask}`,
-      });
+      if (editingKeyId) {
+        await api.patch(`/api-keys/${editingKeyId}`, {
+          label: label || `${targetProviderId} Key`,
+          key: keyToSave,
+          platform: `${baseUrlInput}|model:${modelNameInput}|task:${assignedTask}`,
+        });
+        success('Key Updated!', `Successfully updated key for ${targetProviderId} (${modelNameInput}).`);
+        setEditingKeyId(null);
+      } else {
+        await api.post('/api-keys', {
+          providerId: targetProviderId,
+          label: label || `${targetProviderId} Key`,
+          key: keyToSave,
+          platform: `${baseUrlInput}|model:${modelNameInput}|task:${assignedTask}`,
+        });
+        success('Saved API Key & Model!', `Successfully saved ${targetProviderId} (${modelNameInput}) key in database.`);
+      }
 
       setKeyInput('');
-      success(`Saved API Key & Model!`, `Successfully saved ${selectedProviderName} (${modelNameInput}) key in database.`);
+      if (selectedProviderName === 'CUSTOM_AI_PROVIDER') setCustomProviderName('');
       loadKeyVault();
     } catch (err: any) {
       let errorMsg = 'Failed to save API key. Please check network connection.';
@@ -321,10 +347,28 @@ export default function CreatorSettingsPage() {
     }
   };
 
+  const handleEditKey = (k: any) => {
+    setEditingKeyId(k.id);
+    setLabel(k.label);
+    setKeyInput('');
+    setBaseUrlInput(getBaseUrlOnly(k.platform));
+    setModelNameInput(getModelName(k.platform));
+    setSelectedProviderName(k.provider?.name || k.providerId || 'NVIDIA');
+    const matchTask = k.platform?.match(/task:([^|]+)/);
+    if (matchTask) setAssignedTask(matchTask[1]);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingKeyId(null);
+    setKeyInput('');
+    setSelectedProviderName('NVIDIA');
+  };
+
   const handleDeleteKey = async (id: string) => {
     try {
       await api.delete(`/api-keys/${id}`);
       success('API Key Deleted', 'Key has been removed from database.');
+      if (editingKeyId === id) setEditingKeyId(null);
       loadKeyVault();
     } catch (err: any) {
       error('Delete Failed', 'Failed to delete API key.');
@@ -586,7 +630,7 @@ export default function CreatorSettingsPage() {
                       </div>
 
                       <div className="text-[10px] text-slate-400 font-mono truncate">
-                        {p.defaultBaseUrl || dbMatch?.baseUrl || p.baseUrl || 'https://integrate.api.nvidia.com/v1'}
+                        {p.defaultBaseUrl || dbMatch?.baseUrl || (p as any).baseUrl || 'https://integrate.api.nvidia.com/v1'}
                       </div>
 
                       <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px]">
@@ -603,16 +647,28 @@ export default function CreatorSettingsPage() {
               </div>
             </div>
 
-            {/* Add API Key Form */}
+            {/* Add/Edit API Key Form */}
             <div className="glass-panel p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-indigo-400" />
-                  <h2 className="text-base font-black text-white">Add AI Provider API Key & Target Model</h2>
+                  <h2 className="text-base font-black text-white">
+                    {editingKeyId ? '✏️ Edit AI Provider Key & Target Model' : 'Add AI Provider API Key & Target Model'}
+                  </h2>
                 </div>
-                <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  OpenAI API Compatible
-                </span>
+                {editingKeyId ? (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-colors"
+                  >
+                    Cancel Edit
+                  </button>
+                ) : (
+                  <span className="px-3 py-1 text-[10px] font-extrabold uppercase rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Provider Agnostic V2
+                  </span>
+                )}
               </div>
 
               <form onSubmit={handleSaveKey} className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -624,11 +680,26 @@ export default function CreatorSettingsPage() {
                     onChange={(e) => setSelectedProviderName(e.target.value)}
                     className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   >
+                    <option value="CUSTOM_AI_PROVIDER">➕ Add Custom AI Provider Endpoint...</option>
                     {DEFAULT_PROVIDERS.map((p) => (
                       <option key={p.name} value={p.name}>{p.displayName}</option>
                     ))}
                   </select>
                 </div>
+
+                {/* Custom Provider Name Input (if custom selected) */}
+                {selectedProviderName === 'CUSTOM_AI_PROVIDER' && (
+                  <div>
+                    <label className="block font-bold text-indigo-300 mb-1">Custom Provider Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. My Private DeepSeek Proxy, Runway AI, Local Ollama"
+                      value={customProviderName}
+                      onChange={(e) => setCustomProviderName(e.target.value)}
+                      className="w-full bg-slate-900 border border-indigo-500/50 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-400 font-bold"
+                    />
+                  </div>
+                )}
 
                 {/* Assigned Task */}
                 <div>
@@ -686,11 +757,11 @@ export default function CreatorSettingsPage() {
 
                 {/* Key String */}
                 <div>
-                  <label className="block font-bold text-slate-300 mb-1">API Key String</label>
+                  <label className="block font-bold text-slate-300 mb-1">API Key String (Optional for Free/Local Endpoints)</label>
                   <div className="relative">
                     <input
                       type={showKey ? 'text' : 'password'}
-                      placeholder={DEFAULT_PROVIDERS.find((p) => p.name === selectedProviderName)?.placeholder || 'Enter API Key (e.g. nvapi-...)'}
+                      placeholder={DEFAULT_PROVIDERS.find((p) => p.name === selectedProviderName)?.placeholder || 'Enter API Key (Optional for Local/Free)'}
                       value={keyInput}
                       onChange={(e) => setKeyInput(e.target.value)}
                       className="w-full bg-slate-900 border border-white/10 rounded-xl pl-4 pr-10 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 font-mono"
@@ -708,11 +779,11 @@ export default function CreatorSettingsPage() {
                 <div className="md:col-span-2 flex justify-end pt-2">
                   <button
                     type="submit"
-                    disabled={savingKey || !keyInput}
+                    disabled={savingKey}
                     className="py-3 px-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 disabled:opacity-50 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all cursor-pointer"
                   >
                     <Lock className="w-4 h-4" />
-                    <span>Save Key & Assign Model</span>
+                    <span>{editingKeyId ? 'Update Key & Configuration' : 'Save Key & Assign Model'}</span>
                   </button>
                 </div>
               </form>
@@ -769,7 +840,14 @@ export default function CreatorSettingsPage() {
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                             Active & Ready
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleEditKey(k)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 transition-colors"
+                              title="Edit Key & Model"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => handleDeleteKey(k.id)}
                               className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
