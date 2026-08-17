@@ -10,7 +10,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleInit() {
-    await this.$connect();
+    let retries = 10;
+    let delayMs = 1000;
+    while (retries > 0) {
+      try {
+        await this.$connect();
+        console.log('✅ [PrismaService] Connected to PostgreSQL database successfully.');
+        return;
+      } catch (err: any) {
+        retries--;
+        console.warn(`⚠️ [PrismaService] Database connection failed (${err.message}). Retrying in ${delayMs}ms... (${retries} retries left)`);
+        if (retries === 0) {
+          console.error('❌ [PrismaService] Fatal: Failed to connect to database after 10 retries.', err);
+          throw err;
+        }
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        delayMs = Math.min(delayMs * 1.5, 10000);
+      }
+    }
   }
 
   async onModuleDestroy() {
