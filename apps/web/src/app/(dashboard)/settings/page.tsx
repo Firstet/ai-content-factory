@@ -550,7 +550,7 @@ export default function CreatorSettingsPage() {
                   const pName = p.name || p.displayName;
                   const dbMatch = dbProviders.find((dbp) => dbp.name === p.name);
                   const matchingKeys = keys.filter(
-                    (k) => k.provider?.name === p.name || k.providerId === p.name || k.providerId === p.id
+                    (k) => k.provider?.name === p.name || k.providerId === p.name || (k.providerId && (p as any).id && k.providerId === (p as any).id)
                   );
                   const isNvidia = pName.includes('NVIDIA');
                   const isFreeEngine = pName.includes('Pollinations') || pName.includes('Piper') || pName.includes('Ollama');
@@ -558,7 +558,7 @@ export default function CreatorSettingsPage() {
 
                   return (
                     <div
-                      key={p.id || p.name}
+                      key={(p as any).id || p.name}
                       onClick={() => setSelectedProviderName(p.name)}
                       className={`p-4 rounded-2xl border transition-all cursor-pointer space-y-3 ${
                         isSelected
