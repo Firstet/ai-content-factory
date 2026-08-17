@@ -2,30 +2,39 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const API_INTERNAL_URL = process.env.INTERNAL_API_URL || 'http://api:3001/api';
 
-async function proxyRequest(request: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
-  const { path } = await params;
-  const pathString = path ? path.join('/') : '';
-  const searchParams = request.nextUrl.search;
-
-  // Clean target URL
-  const targetHost = API_INTERNAL_URL.replace(/\/$/, '');
-  const destinationUrl = `${targetHost}/${pathString}${searchParams}`;
+async function proxyRequest(
+  request: NextRequest,
+  context: { params: { path?: string[] } | Promise<{ path?: string[] }> }
+) {
+  let destinationUrl = '';
 
   try {
+    const rawParams = await Promise.resolve(context?.params);
+    const path = rawParams?.path;
+    const pathString = Array.isArray(path) ? path.join('/') : (path || '');
+    const searchParams = request.nextUrl.search || '';
+
+    const targetHost = API_INTERNAL_URL.replace(/\/$/, '');
+    destinationUrl = `${targetHost}/${pathString}${searchParams}`;
+
     const headers = new Headers();
     request.headers.forEach((value, key) => {
       const keyLower = key.toLowerCase();
-      if (!['host', 'content-length', 'connection'].includes(keyLower)) {
+      if (!['host', 'content-length', 'connection', 'accept-encoding'].includes(keyLower)) {
         headers.set(key, value);
       }
     });
 
     let body: ArrayBuffer | undefined = undefined;
-    if (!['GET', 'HEAD'].includes(request.method.toUpperCase())) {
-      const buf = await request.arrayBuffer();
-      if (buf && buf.byteLength > 0) {
-        body = buf;
-      } else {
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method.toUpperCase())) {
+      try {
+        const buf = await request.arrayBuffer();
+        if (buf && buf.byteLength > 0) {
+          body = buf;
+        } else {
+          headers.delete('content-type');
+        }
+      } catch {
         headers.delete('content-type');
       }
     }
@@ -53,7 +62,7 @@ async function proxyRequest(request: NextRequest, { params }: { params: Promise<
       headers: responseHeaders,
     });
   } catch (err: any) {
-    console.error(`[API Proxy Error] Failed to proxy request to ${destinationUrl}:`, err);
+    console.error(`[API Proxy Error] Failed to proxy request to ${destinationUrl || 'unknown'}:`, err);
     return NextResponse.json(
       { message: `API Server Proxy Error: ${err.message || 'Internal connection error'}` },
       { status: 502 }
