@@ -71,5 +71,45 @@ export class ProvidersService implements OnModuleInit {
   async updateConfig(id: string, data: { modelConfig?: object; preferredFor?: string[]; baseUrl?: string }) {
     return this.prisma.provider.update({ where: { id }, data });
   }
-}
 
+  async getTaskRoutes() {
+    return this.prisma.taskRoute.findMany({
+      orderBy: { task: 'asc' },
+    });
+  }
+
+  async upsertTaskRoute(data: {
+    task: string;
+    primaryCredentialId?: string;
+    primaryModelId?: string;
+    fallbackCredentialId?: string;
+    fallbackModelId?: string;
+    secondaryFallbackCredentialId?: string;
+    secondaryFallbackModelId?: string;
+    autoFallbackEnabled?: boolean;
+  }) {
+    const taskUpper = data.task.toUpperCase();
+    return this.prisma.taskRoute.upsert({
+      where: { task: taskUpper },
+      update: {
+        primaryCredentialId: data.primaryCredentialId || null,
+        primaryModelId: data.primaryModelId || null,
+        fallbackCredentialId: data.fallbackCredentialId || null,
+        fallbackModelId: data.fallbackModelId || null,
+        secondaryFallbackCredentialId: data.secondaryFallbackCredentialId || null,
+        secondaryFallbackModelId: data.secondaryFallbackModelId || null,
+        autoFallbackEnabled: data.autoFallbackEnabled ?? true,
+      },
+      create: {
+        task: taskUpper,
+        primaryCredentialId: data.primaryCredentialId || null,
+        primaryModelId: data.primaryModelId || null,
+        fallbackCredentialId: data.fallbackCredentialId || null,
+        fallbackModelId: data.fallbackModelId || null,
+        secondaryFallbackCredentialId: data.secondaryFallbackCredentialId || null,
+        secondaryFallbackModelId: data.secondaryFallbackModelId || null,
+        autoFallbackEnabled: data.autoFallbackEnabled ?? true,
+      },
+    });
+  }
+}

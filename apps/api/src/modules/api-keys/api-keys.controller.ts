@@ -37,6 +37,11 @@ export class ApiKeysController {
     return this.service.update(id, dto);
   }
 
+  @Post(':id/test')
+  testConnection(@Param('id') id: string) {
+    return this.service.testConnection(id);
+  }
+
   @Delete(':id')
   delete(@Param('id') id: string) {
     return this.service.delete(id);

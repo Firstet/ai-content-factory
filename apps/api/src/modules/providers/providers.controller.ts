@@ -12,6 +12,16 @@ export class ProvidersController {
     return this.service.findAll();
   }
 
+  @Get('routes')
+  getTaskRoutes() {
+    return this.service.getTaskRoutes();
+  }
+
+  @Post('routes')
+  upsertTaskRoute(@Body() data: any) {
+    return this.service.upsertTaskRoute(data);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);

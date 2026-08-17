@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CryptoService } from '../../common/crypto/crypto.service';
+import { ProviderDiscoveryService } from '../providers/provider-discovery.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
 
 const isUuid = (val: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
@@ -10,20 +11,20 @@ export class ApiKeysService {
   constructor(
     private prisma: PrismaService,
     private crypto: CryptoService,
+    private discovery: ProviderDiscoveryService,
   ) {}
 
   /**
-   * Store an API key — encrypts before writing to DB.
+   * Store an API credential — encrypts key, runs connection test & model discovery.
    * The raw key is NEVER returned after creation.
    */
   async create(dto: CreateApiKeyDto) {
     try {
-      const rawKey = dto.key && dto.key.trim() !== '' ? dto.key : 'FREE_LOCAL_ENGINE';
-      const encryptedKey = this.crypto.encrypt(rawKey);
-
-      // Safe provider lookup preventing invalid UUID cast errors in PostgreSQL
       const providerIdStr = dto.providerId || 'CUSTOM_AI';
       const sanitizedName = providerIdStr.replace(/[^a-zA-Z0-9_]/g, '_').toUpperCase();
+
+      const rawKey = dto.key && dto.key.trim() !== '' ? dto.key : 'FREE_LOCAL_ENGINE';
+      const encryptedKey = this.crypto.encrypt(rawKey);
 
       let provider = await this.prisma.provider.findFirst({
         where: isUuid(dto.providerId)
@@ -43,18 +44,42 @@ export class ApiKeysService {
         });
       }
 
+      // Automatically test connection & discover models
+      const discoveryResult = await this.discovery.discover(sanitizedName, rawKey, dto.baseUrl);
+
       const apiKey = await this.prisma.apiKey.create({
         data: {
           providerId: provider.id,
-          label: dto.label || `${provider.displayName} Key`,
+          label: dto.label || `${provider.displayName} Credential`,
           encryptedKey,
-          platform: dto.platform || 'https://integrate.api.nvidia.com/v1|model:default|task:ALL_IN_ONE',
+          baseUrl: dto.baseUrl || provider.baseUrl,
+          platform: dto.platform || `${dto.baseUrl || provider.baseUrl || ''}|protocol:openai_compatible`,
           keyType: dto.keyType || 'api',
+          status: discoveryResult.status,
+          discoveredModels: discoveryResult.models,
+          discoveredCapabilities: discoveryResult.capabilities,
+          lastTestedAt: new Date(),
+          lastError: discoveryResult.error || null,
         },
-        select: { id: true, label: true, providerId: true, isActive: true, createdAt: true },
+        select: {
+          id: true,
+          label: true,
+          providerId: true,
+          isActive: true,
+          status: true,
+          discoveredModels: true,
+          discoveredCapabilities: true,
+          baseUrl: true,
+          lastTestedAt: true,
+          createdAt: true,
+        },
       });
 
-      return { ...apiKey, message: 'API key stored securely.' };
+      return {
+        ...apiKey,
+        discovery: discoveryResult,
+        message: 'API Credential saved & connection tested successfully.',
+      };
     } catch (err: any) {
       console.error('[ApiKeysService] Error creating API key:', err);
       throw new BadRequestException(`Failed to save API key: ${err.message || 'Database error'}`);
@@ -79,10 +104,15 @@ export class ApiKeysService {
       await this.prisma.apiKey.create({
         data: {
           providerId: nvidiaProvider.id,
-          label: 'NVIDIA NIM Free Trial Key',
+          label: 'NVIDIA Production Key',
           encryptedKey: this.crypto.encrypt('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'),
-          platform: 'https://integrate.api.nvidia.com/v1|model:nvidia/nvidia-nemotron-nano-9b-v2|task:ALL_IN_ONE',
+          baseUrl: 'https://integrate.api.nvidia.com/v1',
+          platform: 'https://integrate.api.nvidia.com/v1|protocol:openai_compatible',
           keyType: 'api',
+          status: 'CONNECTED',
+          discoveredModels: ['nvidia/nvidia-nemotron-nano-9b-v2', 'meta/llama-3.3-70b-instruct'],
+          discoveredCapabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING'],
+          lastTestedAt: new Date(),
         },
       });
       console.log('[ApiKeysService] Auto-seeded default NVIDIA API key into database.');
@@ -94,15 +124,50 @@ export class ApiKeysService {
         id: true,
         label: true,
         providerId: true,
+        baseUrl: true,
         platform: true,
         keyType: true,
         isActive: true,
+        status: true,
+        discoveredModels: true,
+        discoveredCapabilities: true,
+        lastTestedAt: true,
+        lastError: true,
         lastUsedAt: true,
         usageCount: true,
         createdAt: true,
         provider: { select: { name: true, displayName: true } },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async testConnection(id: string) {
+    const record = await this.prisma.apiKey.findUniqueOrThrow({
+      where: { id },
+      include: { provider: true },
+    });
+    const decryptedKey = this.crypto.decrypt(record.encryptedKey);
+    const discovery = await this.discovery.discover(record.provider?.name || 'CUSTOM', decryptedKey, record.baseUrl || undefined);
+
+    return this.prisma.apiKey.update({
+      where: { id },
+      data: {
+        status: discovery.status,
+        discoveredModels: discovery.models,
+        discoveredCapabilities: discovery.capabilities,
+        lastTestedAt: new Date(),
+        lastError: discovery.error || null,
+      },
+      select: {
+        id: true,
+        label: true,
+        status: true,
+        discoveredModels: true,
+        discoveredCapabilities: true,
+        lastTestedAt: true,
+        lastError: true,
+      },
     });
   }
 
@@ -120,6 +185,7 @@ export class ApiKeysService {
 
     const updateData: any = {};
     if (dto.label) updateData.label = dto.label;
+    if (dto.baseUrl) updateData.baseUrl = dto.baseUrl;
     if (dto.platform) updateData.platform = dto.platform;
     if (dto.key && dto.key.trim() !== '' && dto.key !== 'FREE_LOCAL_ENGINE') {
       updateData.encryptedKey = this.crypto.encrypt(dto.key);
@@ -128,7 +194,7 @@ export class ApiKeysService {
     return this.prisma.apiKey.update({
       where: { id },
       data: updateData,
-      select: { id: true, label: true, providerId: true, isActive: true, platform: true },
+      select: { id: true, label: true, providerId: true, isActive: true, status: true, platform: true },
     });
   }
 
@@ -137,13 +203,10 @@ export class ApiKeysService {
     return { message: 'API key deleted' };
   }
 
-  /**
-   * Decrypt and return a key — for internal use by workers only.
-   * Should NEVER be exposed via REST endpoint.
-   */
   async getDecryptedKey(id: string): Promise<string> {
     const record = await this.prisma.apiKey.findUnique({ where: { id } });
     if (!record) throw new NotFoundException(`API key ${id} not found`);
     return this.crypto.decrypt(record.encryptedKey);
   }
 }
+

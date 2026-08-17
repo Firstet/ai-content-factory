@@ -356,10 +356,13 @@ model NicheIntelligence {
 
 model TaskRoute {
   id                            String   @id @default(uuid())
-  task                          String   @unique // e.g. "RESEARCH", "SCRIPTWRITING", "IMAGE_GENERATION", "TTS"
+  task                          String   @unique // e.g. "RESEARCH", "SEO_RESEARCH", "CONTENT_STRATEGY", "SCRIPTWRITING", "COPYWRITING", "IMAGE_GENERATION", "VIDEO_GENERATION", "TEXT_TO_SPEECH"
   primaryCredentialId           String?
+  primaryModelId                String?
   fallbackCredentialId          String?
+  fallbackModelId               String?
   secondaryFallbackCredentialId String?
+  secondaryFallbackModelId      String?
   autoFallbackEnabled           Boolean  @default(true)
 
   createdAt DateTime @default(now())
@@ -474,17 +477,23 @@ model Provider {
 }
 
 model ApiKey {
-  id           String  @id @default(uuid())
-  providerId   String
-  label        String
-  encryptedKey String  @db.Text // AES-256-GCM encrypted
-  isActive     Boolean @default(true)
-  lastUsedAt   DateTime?
-  usageCount   Int     @default(0)
+  id                     String    @id @default(uuid())
+  providerId             String
+  label                  String
+  encryptedKey           String    @db.Text // AES-256-GCM encrypted
+  isActive               Boolean   @default(true)
+  status                 String    @default("CONNECTED") // CONNECTED, CONNECTION_FAILED, UNTESTED
+  lastTestedAt           DateTime?
+  lastError              String?   @db.Text
+  discoveredModels       String[]  @default([])
+  discoveredCapabilities String[]  @default([])
+  baseUrl                String?
+  lastUsedAt             DateTime?
+  usageCount             Int       @default(0)
 
   // Social platform specific keys
-  platform     String? // Platform enum value
-  keyType      String  @default("api") // "api" | "oauth_client" | "oauth_secret"
+  platform               String? // Platform enum value
+  keyType                String  @default("api") // "api" | "oauth_client" | "oauth_secret"
 
   provider Provider? @relation(fields: [providerId], references: [id], onDelete: Cascade)
 
