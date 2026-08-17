@@ -10,6 +10,14 @@ function sanitizeUrl(url: string): string {
   }
 }
 
+function getInternalApiUrl(): string {
+  const url = process.env.INTERNAL_API_URL || 'http://api:3001/api';
+  if (!url || url.trim() === '') {
+    throw new Error('[CONFIG_ERROR] INTERNAL_API_URL environment variable is not configured.');
+  }
+  return url.trim();
+}
+
 async function proxyRequest(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
@@ -23,9 +31,11 @@ async function proxyRequest(
     const pathString = Array.isArray(path) ? path.join('/') : (path || '');
     const searchParams = request.nextUrl.search || '';
 
+    const canonicalInternalUrl = getInternalApiUrl();
+
     // Internal server-to-server proxy candidates ONLY (Docker internal DNS / local dev)
     const rawCandidates = [
-      process.env.INTERNAL_API_URL,
+      canonicalInternalUrl,
       'http://api:3001/api',
       'http://127.0.0.1:3001/api',
       'http://localhost:3001/api',
@@ -106,10 +116,23 @@ async function proxyRequest(
 
     throw lastError || new Error('All internal API proxy candidates failed');
   } catch (err: any) {
-    const causeCode = err?.cause?.code || err?.code || 'UNKNOWN';
-    const causeDetails = err?.cause
-      ? `(${err.cause.code || 'FAIL'} ${err.cause.address || ''}:${err.cause.port || ''})`
-      : '';
+    const causeCode = err?.cause?.code || err?.code || 'ECONNREFUSED';
+
+    let causeAddressPort = '';
+    if (err?.cause?.address && err?.cause?.port) {
+      causeAddressPort = ` ${err.cause.address}:${err.cause.port}`;
+    } else if (lastDestination) {
+      try {
+        const parsed = new URL(lastDestination);
+        causeAddressPort = ` ${parsed.host}`;
+      } catch {
+        causeAddressPort = ' api:3001';
+      }
+    } else {
+      causeAddressPort = ' api:3001';
+    }
+
+    const causeDetails = `(${causeCode}${causeAddressPort})`;
 
     console.error('[API Proxy Fatal Error]:', {
       destination: sanitizeUrl(lastDestination),
@@ -126,11 +149,15 @@ async function proxyRequest(
         cause: err?.cause
           ? {
               code: err.cause.code,
-              address: err.cause.address,
-              port: err.cause.port,
+              address: err.cause.address || 'api',
+              port: err.cause.port || 3001,
               syscall: err.cause.syscall,
             }
-          : undefined,
+          : {
+              code: causeCode,
+              address: 'api',
+              port: 3001,
+            },
       },
       { status: 502 }
     );
