@@ -17,6 +17,8 @@ export interface ResolvedProviderOptions {
   model?: string;
   baseUrl?: string;
   credentialId?: string;
+}
+
 @Injectable()
 export class ProviderRouterService {
   private readonly logger = new Logger(ProviderRouterService.name);
