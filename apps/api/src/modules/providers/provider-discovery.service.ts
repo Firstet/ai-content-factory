@@ -45,7 +45,9 @@ export class ProviderDiscoveryService {
 
     try {
       if (nameUpper === 'OLLAMA') {
-        const res = await fetch(`${targetUrl.replace(/\/+$/, '')}/api/tags`);
+        const res = await fetch(`${targetUrl.replace(/\/+$/, '')}/api/tags`, {
+          signal: AbortSignal.timeout(3000),
+        });
         if (res.ok) {
           const data = await res.json();
           const models = (data.models || []).map((m: any) => m.name || m.model);
@@ -68,7 +70,10 @@ export class ProviderDiscoveryService {
       }
 
       const modelsEndpoint = `${targetUrl.replace(/\/+$/, '')}/models`;
-      const res = await fetch(modelsEndpoint, { headers });
+      const res = await fetch(modelsEndpoint, {
+        headers,
+        signal: AbortSignal.timeout(3000),
+      });
 
       if (res.ok) {
         const data = await res.json();
@@ -97,7 +102,9 @@ export class ProviderDiscoveryService {
         status: 'CONNECTION_FAILED',
         models: [this.getDefaultModel(nameUpper)],
         capabilities: this.detectCapabilities(nameUpper, []),
-        error: err.message || 'Network timeout / Host unreachable',
+        error: err.name === 'AbortError' || err.name === 'TimeoutError'
+          ? 'Connection test timed out after 3s'
+          : (err.message || 'Network error / Host unreachable'),
       };
     }
   }
