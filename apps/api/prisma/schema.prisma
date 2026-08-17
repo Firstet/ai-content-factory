@@ -105,10 +105,11 @@ model Brand {
   lastAutoRunAt     DateTime?
   nextAutoRunAt     DateTime?
 
-  users    User[]
-  channels Channel[]
-  videos   Video[]
-  prompts  Prompt[]
+  users           User[]
+  channels        Channel[]
+  videos          Video[]
+  prompts         Prompt[]
+  contentProjects ContentProject[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -220,6 +221,171 @@ model Script {
   updatedAt DateTime @updatedAt
 
   @@map("scripts")
+}
+
+// ─── Multi-Platform Content Operating System Models ───────────
+
+model ContentProject {
+  id              String   @id @default(uuid())
+  title           String
+  brandId         String
+  nicheId         String?
+  goal            String   @default("ENGAGEMENT") // ENGAGEMENT, GROWTH, LEAD_GEN, SALES
+  platforms       String[] @default(["YOUTUBE", "INSTAGRAM", "TIKTOK", "LINKEDIN"])
+  formats         String[] @default(["VIDEO", "CAROUSEL", "FLYER"])
+  periodDays      Int      @default(7)
+  status          String   @default("DRAFT") // DRAFT, GENERATING, COMPLETED, FAILED
+  masterNarrative Json     @default("{}")
+  
+  userId          String?
+  organizationId  String?
+
+  brand   Brand           @relation(fields: [brandId], references: [id])
+  niche   Niche?          @relation(fields: [nicheId], references: [id])
+  outputs ContentOutput[]
+  usage   UsageRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("content_projects")
+}
+
+model ContentOutput {
+  id             String   @id @default(uuid())
+  projectId      String
+  platform       String   // YOUTUBE, INSTAGRAM, TIKTOK, LINKEDIN, FACEBOOK, FLYER
+  format         String   // VIDEO, CAROUSEL, SHORT, FLYER, POST
+  title          String
+  adaptedContent Json     @default("{}")
+  version        Int      @default(1)
+  qaPassed       Boolean  @default(true)
+  qaReport       Json     @default("{}")
+
+  project ContentProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scenes  SceneTimeline[]
+  slides  CarouselSlide[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("content_outputs")
+}
+
+model SceneTimeline {
+  id              String  @id @default(uuid())
+  outputId        String
+  sceneIndex      Int
+  durationSeconds Int     @default(5)
+  narrationText   String  @db.Text
+  visualType      String  @default("AI_IMAGE") // AI_VIDEO, AI_IMAGE, B_ROLL, TEXT_CARD
+  visualGoal      String?
+  visualPrompt    String  @db.Text
+  cameraDirection String?
+  onScreenText    String?
+  audioUrl        String?
+  imageUrl        String?
+  videoUrl        String?
+  version         Int     @default(1)
+
+  output ContentOutput @relation(fields: [outputId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("scene_timelines")
+}
+
+model CarouselSlide {
+  id              String  @id @default(uuid())
+  outputId        String
+  slideIndex      Int
+  headline        String
+  bodyText        String  @db.Text
+  visualPrompt    String  @db.Text
+  designDirection String?
+  imageUrl        String?
+  version         Int     @default(1)
+
+  output ContentOutput @relation(fields: [outputId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("carousel_slides")
+}
+
+model Niche {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  isCustom    Boolean  @default(false)
+  category    String   @default("General")
+
+  intelligence NicheIntelligence?
+  projects     ContentProject[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("niches")
+}
+
+model NicheIntelligence {
+  id                       String   @id @default(uuid())
+  nicheId                  String   @unique
+  audienceDescription      String?  @db.Text
+  demographics             Json     @default("{}")
+  interests                String[] @default([])
+  painPoints               String[] @default([])
+  searchIntent             String[] @default([])
+  keywordOpportunities     String[] @default([])
+  commonQuestions          String[] @default([])
+  contentGaps              String[] @default([])
+  evergreenTopics          String[] @default([])
+  trendingTopics           String[] @default([])
+  monetizationOpportunities String[] @default([])
+  
+  lastResearchedAt         DateTime @default(now())
+
+  niche Niche @relation(fields: [nicheId], references: [id], onDelete: Cascade)
+
+  @@map("niche_intelligences")
+}
+
+model TaskRoute {
+  id                            String   @id @default(uuid())
+  task                          String   @unique // e.g. "RESEARCH", "SCRIPTWRITING", "IMAGE_GENERATION", "TTS"
+  primaryCredentialId           String?
+  fallbackCredentialId          String?
+  secondaryFallbackCredentialId String?
+  autoFallbackEnabled           Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("task_routes")
+}
+
+model UsageRecord {
+  id             String   @id @default(uuid())
+  projectId      String?
+  provider       String
+  model          String
+  task           String
+  inputTokens    Int      @default(0)
+  outputTokens   Int      @default(0)
+  mediaCount     Int      @default(0)
+  estimatedCost  Float    @default(0.0)
+  userId         String?
+  organizationId String?
+
+  project ContentProject? @relation(fields: [projectId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("usage_records")
 }
 
 // ─── Jobs & Queue ─────────────────────────────────────────────

@@ -24,6 +24,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { VoiceModule } from './modules/voice/voice.module';
 import { QUEUE_NAMES } from '@acf/shared';
 
+import { NichesModule } from './modules/niches/niches.module';
+import { ContentModule } from './modules/content/content.module';
+
 @Module({
   imports: [
     // ─── Config ─────────────────────────────────────────────
@@ -91,6 +94,8 @@ import { QUEUE_NAMES } from '@acf/shared';
     PublishingModule,
     AdminModule,
     VoiceModule,
+    NichesModule,
+    ContentModule,
   ],
 })
 export class AppModule {}
