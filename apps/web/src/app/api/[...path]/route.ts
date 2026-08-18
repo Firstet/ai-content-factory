@@ -12,12 +12,17 @@ function sanitizeUrl(url: string): string {
 }
 
 function getInternalApiUrl(): string {
-  if (process.env.INTERNAL_API_URL && process.env.INTERNAL_API_URL.trim() !== '') {
-    return process.env.INTERNAL_API_URL.trim();
+  const isDocker = fs.existsSync('/.dockerenv');
+  const configuredUrl = process.env.INTERNAL_API_URL?.trim();
+
+  if (configuredUrl) {
+    // If running on host machine (outside Docker), convert container hostname 'api' to '127.0.0.1'
+    if (!isDocker && (configuredUrl.includes('://api:') || configuredUrl.includes('://api/'))) {
+      return configuredUrl.replace('://api', '://127.0.0.1');
+    }
+    return configuredUrl;
   }
 
-  // Detect whether code is running inside a Docker container or directly on local host OS
-  const isDocker = fs.existsSync('/.dockerenv');
   if (isDocker) {
     return 'http://api:3001/api';
   }
