@@ -33,13 +33,21 @@ async function proxyRequest(
 
     const canonicalInternalUrl = getInternalApiUrl();
 
-    // Internal server-to-server proxy candidates ONLY (Docker internal DNS / local dev)
-    const rawCandidates = [
-      canonicalInternalUrl,
-      'http://api:3001/api',
-      'http://127.0.0.1:3001/api',
-      'http://localhost:3001/api',
-    ];
+    const isProd = process.env.NODE_ENV === 'production';
+
+    // Internal server-to-server proxy candidates
+    // In production Docker mode, strictly use Docker internal DNS service name (http://api:3001/api)
+    // NEVER use localhost or 127.0.0.1 inside a production Docker container.
+    const rawCandidates = isProd
+      ? [
+          process.env.INTERNAL_API_URL || 'http://api:3001/api',
+          'http://api:3001/api',
+        ]
+      : [
+          process.env.INTERNAL_API_URL || 'http://localhost:3001/api',
+          'http://localhost:3001/api',
+          'http://127.0.0.1:3001/api',
+        ];
 
     const candidates = Array.from(
       new Set(
