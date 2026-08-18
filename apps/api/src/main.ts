@@ -38,7 +38,8 @@ async function bootstrap() {
   });
 
   // ─── Global prefix ──────────────────────────────────────────
-  app.setGlobalPrefix('api');
+  const apiPrefix = config.get<string>('API_PREFIX') || 'api';
+  app.setGlobalPrefix(apiPrefix);
 
   // ─── Validation & Exception Filters ──────────────────────────
   app.useGlobalPipes(
