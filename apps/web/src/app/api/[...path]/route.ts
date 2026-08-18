@@ -11,16 +11,25 @@ function sanitizeUrl(url: string): string {
   }
 }
 
+function normalizeApiBaseUrl(url: string): string {
+  let cleaned = url.trim().replace(/\/+$/, '');
+  if (!cleaned.endsWith('/api')) {
+    cleaned = `${cleaned}/api`;
+  }
+  return cleaned;
+}
+
 function getInternalApiUrl(): string {
   const isDocker = fs.existsSync('/.dockerenv');
   const configuredUrl = process.env.INTERNAL_API_URL?.trim();
 
   if (configuredUrl) {
     // If running on host machine (outside Docker), convert container hostname 'api' to '127.0.0.1'
-    if (!isDocker && (configuredUrl.includes('://api:') || configuredUrl.includes('://api/'))) {
-      return configuredUrl.replace('://api', '://127.0.0.1');
+    let target = configuredUrl;
+    if (!isDocker && (target.includes('://api:') || target.includes('://api/'))) {
+      target = target.replace('://api', '://127.0.0.1');
     }
-    return configuredUrl;
+    return normalizeApiBaseUrl(target);
   }
 
   if (isDocker) {
