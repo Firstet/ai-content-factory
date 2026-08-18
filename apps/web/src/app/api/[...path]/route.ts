@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as fs from 'fs';
 
 function sanitizeUrl(url: string): string {
   try {
@@ -11,16 +12,22 @@ function sanitizeUrl(url: string): string {
 }
 
 function getInternalApiUrl(): string {
-  const url = process.env.INTERNAL_API_URL || 'http://api:3001/api';
-  if (!url || url.trim() === '') {
-    throw new Error('[CONFIG_ERROR] INTERNAL_API_URL environment variable is not configured.');
+  if (process.env.INTERNAL_API_URL && process.env.INTERNAL_API_URL.trim() !== '') {
+    return process.env.INTERNAL_API_URL.trim();
   }
-  return url.trim();
+
+  // Detect whether code is running inside a Docker container or directly on local host OS
+  const isDocker = fs.existsSync('/.dockerenv');
+  if (isDocker) {
+    return 'http://api:3001/api';
+  }
+
+  return 'http://127.0.0.1:3001/api';
 }
 
 async function proxyRequest(
   request: NextRequest,
-  context: { params: Promise<{ path: string[] }> }
+  context?: { params?: Promise<{ path?: string[] }> | { path?: string[] } }
 ) {
   let lastError: any = null;
   let lastDestination = '';
@@ -32,21 +39,18 @@ async function proxyRequest(
     const searchParams = request.nextUrl.search || '';
 
     const canonicalInternalUrl = getInternalApiUrl();
-
-    const isProd = process.env.NODE_ENV === 'production';
+    const isDocker = fs.existsSync('/.dockerenv');
 
     // Internal server-to-server proxy candidates
-    // In production Docker mode, strictly use Docker internal DNS service name (http://api:3001/api)
-    // NEVER use localhost or 127.0.0.1 inside a production Docker container.
-    const rawCandidates = isProd
+    const rawCandidates = isDocker
       ? [
-          process.env.INTERNAL_API_URL || 'http://api:3001/api',
+          canonicalInternalUrl,
           'http://api:3001/api',
         ]
       : [
-          process.env.INTERNAL_API_URL || 'http://localhost:3001/api',
-          'http://localhost:3001/api',
+          canonicalInternalUrl,
           'http://127.0.0.1:3001/api',
+          'http://localhost:3001/api',
         ];
 
     const candidates = Array.from(
