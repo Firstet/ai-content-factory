@@ -27,7 +27,7 @@ function getInternalApiUrl(): string {
 
 async function proxyRequest(
   request: NextRequest,
-  context?: { params?: Promise<{ path?: string[] }> | { path?: string[] } }
+  context: { params: Promise<{ path: string[] }> }
 ) {
   let lastError: any = null;
   let lastDestination = '';
