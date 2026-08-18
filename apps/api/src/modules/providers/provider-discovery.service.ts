@@ -59,6 +59,41 @@ export class ProviderDiscoveryService {
         }
       }
 
+      // Pollinations AI discovery (Text/LLM, Image, Video)
+      if (nameUpper.includes('POLLINATIONS') || targetUrl.includes('pollinations.ai')) {
+        try {
+          const textModelsRes = await fetch('https://text.pollinations.ai/models', {
+            headers: { Authorization: `Bearer ${apiKey}` },
+            signal: AbortSignal.timeout(3000),
+          });
+          if (textModelsRes.ok) {
+            const textData = await textModelsRes.json();
+            const models = Array.isArray(textData)
+              ? textData.map((m: any) => m.name || m.id || m).filter(Boolean)
+              : ['openai', 'qwen', 'mistral'];
+            return {
+              status: 'CONNECTED',
+              models: models.length > 0 ? models : ['openai', 'qwen', 'mistral'],
+              capabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING', 'IMAGE_GENERATION'],
+            };
+          }
+
+          // Fallback check on gen.pollinations.ai health root
+          const healthRes = await fetch('https://gen.pollinations.ai/', {
+            signal: AbortSignal.timeout(3000),
+          });
+          if (healthRes.ok) {
+            return {
+              status: 'CONNECTED',
+              models: ['openai', 'qwen', 'mistral', 'flux'],
+              capabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING', 'IMAGE_GENERATION'],
+            };
+          }
+        } catch {
+          // Fall through to standard check if custom network configuration is used
+        }
+      }
+
       // Standard OpenAI-compatible /v1/models check
       const headers: Record<string, string> = {
         Authorization: `Bearer ${apiKey}`,

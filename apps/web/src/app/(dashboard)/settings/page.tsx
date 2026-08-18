@@ -47,6 +47,17 @@ const SUPPORTED_CATALOG = [
     isFree: false,
   },
   {
+    id: 'POLLINATIONS',
+    name: 'Pollinations AI (LLM & Text)',
+    protocol: 'OpenAI-compatible',
+    category: 'LLM',
+    capabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING'],
+    placeholder: 'sk_...',
+    defaultBaseUrl: 'https://gen.pollinations.ai',
+    defaultModel: 'openai',
+    isFree: true,
+  },
+  {
     id: 'DEEPSEEK',
     name: 'DeepSeek AI',
     protocol: 'OpenAI-compatible',
