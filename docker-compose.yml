@@ -105,17 +105,18 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_SECRET: ${JWT_SECRET:-f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8}
       ENCRYPTION_SECRET: ${ENCRYPTION_SECRET:-e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855}
-      APP_URL: ${APP_URL:-http://169.58.142.29:3002}
+      APP_URL: ${APP_URL:-https://youtub-auto-5opxww-7caa24-169-58-142-29.sslip.io}
       YOUTUBE_CLIENT_ID: ${YOUTUBE_CLIENT_ID:-}
       YOUTUBE_CLIENT_SECRET: ${YOUTUBE_CLIENT_SECRET:-}
-      YOUTUBE_REDIRECT_URI: ${YOUTUBE_REDIRECT_URI:-}
+      YOUTUBE_REDIRECT_URI: ${YOUTUBE_REDIRECT_URI:-https://youtub-auto-5opxww-7caa24-169-58-142-29.sslip.io/api/channels/oauth/youtube/callback}
     ports:
       - "3001:3001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 5
+      start_period: 30s
     networks:
       - acf_network
 
@@ -128,7 +129,8 @@ services:
       dockerfile: infra/docker/Dockerfile.web
     restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000

@@ -83,42 +83,52 @@ async function proxyRequest(
       const destinationUrl = `${targetHost}/${pathString}${searchParams}`;
       lastDestination = destinationUrl;
 
-      try {
-        const response = await fetch(destinationUrl, {
-          method: request.method,
-          headers,
-          body,
-          cache: 'no-store',
-        });
+      // Retry transient container DNS / startup errors up to 2 times
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          const response = await fetch(destinationUrl, {
+            method: request.method,
+            headers,
+            body,
+            cache: 'no-store',
+          });
 
-        const data = await response.arrayBuffer();
+          const data = await response.arrayBuffer();
 
-        const responseHeaders = new Headers();
-        response.headers.forEach((value, key) => {
-          const keyLower = key.toLowerCase();
-          if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(keyLower)) {
-            responseHeaders.set(key, value);
+          const responseHeaders = new Headers();
+          response.headers.forEach((value, key) => {
+            const keyLower = key.toLowerCase();
+            if (!['content-encoding', 'transfer-encoding', 'content-length'].includes(keyLower)) {
+              responseHeaders.set(key, value);
+            }
+          });
+
+          return new NextResponse(data, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: responseHeaders,
+          });
+        } catch (err: any) {
+          lastError = err;
+          const code = (err as any)?.cause?.code || (err as any)?.code || 'UNKNOWN';
+          const isTransient = ['EAI_AGAIN', 'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'FETCH_ERROR'].includes(code);
+
+          console.warn('[AI_PROVIDER_PROXY_FETCH_ATTEMPT_FAILED]', {
+            attempt,
+            url: sanitizeUrl(destinationUrl),
+            method: request.method,
+            errorName: err instanceof Error ? err.name : undefined,
+            errorMessage: err instanceof Error ? err.message : undefined,
+            causeCode: code,
+            isTransient,
+          });
+
+          if (isTransient && attempt < 3) {
+            await new Promise((resolve) => setTimeout(resolve, attempt * 350));
+            continue;
           }
-        });
-
-        return new NextResponse(data, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: responseHeaders,
-        });
-      } catch (err: any) {
-        console.error('[AI_PROVIDER_PROXY_FETCH_FAILED]', {
-          url: sanitizeUrl(destinationUrl),
-          method: request.method,
-          errorName: err instanceof Error ? err.name : undefined,
-          errorMessage: err instanceof Error ? err.message : undefined,
-          cause: err instanceof Error ? (err as any).cause : undefined,
-          causeCode: (err as any)?.cause?.code,
-          causeAddress: (err as any)?.cause?.address,
-          causePort: (err as any)?.cause?.port,
-          causeSyscall: (err as any)?.cause?.syscall,
-        });
-        lastError = err;
+          break;
+        }
       }
     }
 
