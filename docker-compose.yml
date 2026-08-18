@@ -94,6 +94,8 @@ services:
       context: .
       dockerfile: infra/docker/Dockerfile.api
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -128,6 +130,8 @@ services:
       context: .
       dockerfile: infra/docker/Dockerfile.web
     restart: unless-stopped
+    env_file:
+      - .env
     depends_on:
       - api
     environment:
@@ -149,6 +153,8 @@ services:
       context: .
       dockerfile: infra/docker/Dockerfile.worker
     restart: unless-stopped
+    env_file:
+      - .env
     command: ["node", "dist/unified.js"]
     depends_on:
       postgres:
