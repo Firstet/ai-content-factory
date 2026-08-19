@@ -8,6 +8,28 @@ import Redis from 'ioredis';
 
 export const prisma = new PrismaClient();
 
+// Connect to DB with retries to prevent worker process crashes during boot
+async function initPrismaConnection() {
+  let retries = 10;
+  while (retries > 0) {
+    try {
+      await prisma.$connect();
+      console.log('✅ [WorkerBase] Connected to PostgreSQL database.');
+      return;
+    } catch (err: any) {
+      retries--;
+      console.warn(`⚠️ [WorkerBase] DB connect failed (${err.message}). Retrying... (${retries} left)`);
+      if (retries === 0) {
+        console.error('❌ [WorkerBase] Fatal: Could not connect to DB.', err);
+      } else {
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
+  }
+}
+
+initPrismaConnection();
+
 function parseRedisConfig() {
   const redisUrl = process.env.REDIS_URL?.trim();
   if (redisUrl) {
