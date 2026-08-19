@@ -43,13 +43,11 @@ ENV NODE_ENV=production
 # Copy built app, node_modules, and shared package
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
-COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-
-# Ensure @acf/shared package resolution in node_modules
-RUN mkdir -p node_modules/@acf && cp -r packages/shared node_modules/@acf/shared
+COPY --from=builder /app/packages/shared/package.json ./node_modules/@acf/shared/package.json
+COPY --from=builder /app/packages/shared/dist ./node_modules/@acf/shared/dist
 
 EXPOSE 3001
 
