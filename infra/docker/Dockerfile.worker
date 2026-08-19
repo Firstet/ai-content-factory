@@ -30,8 +30,8 @@ RUN cd apps/api && npx prisma generate
 RUN pnpm --filter workers build
 
 FROM node:22-alpine AS runner
-# Install ffmpeg for video workers
-RUN apk add --no-cache ffmpeg curl python3
+# Install ffmpeg, openssl, and libc6-compat for Prisma & video workers
+RUN apk add --no-cache ffmpeg curl python3 openssl libc6-compat
 
 WORKDIR /app
 
@@ -39,10 +39,13 @@ ENV NODE_ENV=production
 
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /app/packages/shared ./packages/shared
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/workers/dist ./dist
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
+
+# Ensure @acf/shared package resolution in node_modules
+RUN mkdir -p node_modules/@acf && cp -r packages/shared node_modules/@acf/shared
 
 # Execute unified worker by default
 CMD ["node", "dist/unified.js"]
