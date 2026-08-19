@@ -8,10 +8,26 @@ import Redis from 'ioredis';
 
 export const prisma = new PrismaClient();
 
-export const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-};
+function parseRedisConfig() {
+  const redisUrl = process.env.REDIS_URL?.trim();
+  if (redisUrl) {
+    try {
+      const parsed = new URL(redisUrl);
+      return {
+        host: parsed.hostname || 'redis',
+        port: parseInt(parsed.port || '6379', 10),
+      };
+    } catch {
+      // Ignore URL parse error
+    }
+  }
+  return {
+    host: process.env.REDIS_HOST?.trim() || 'redis',
+    port: parseInt(process.env.REDIS_PORT?.trim() || '6379', 10),
+  };
+}
+
+export const redisConnection = parseRedisConfig();
 
 export function createWorker(
   queueName: string,
@@ -66,7 +82,7 @@ export async function emitJobProgress(
   progress: number,
   message: string,
 ) {
-  const client = new Redis(redisConnection.port, redisConnection.host);
+  const client = new Redis({ host: redisConnection.host, port: redisConnection.port });
   await client.publish(
     'acf:job-progress',
     JSON.stringify({ videoId, step, progress, message, timestamp: new Date().toISOString() }),
