@@ -48,6 +48,9 @@ async function proxyRequest(
     const rawCandidates = [
       configured,
       'http://api:3001/api',
+      'http://youtub-auto-5opxww-api-1:3001/api',
+      'http://youtub-auto-5opxww-api:3001/api',
+      'http://youtub-auto-5opxww_api_1:3001/api',
       'http://backend:3001/api',
       'http://youtub-auto-api:3001/api',
       'http://host.docker.internal:3001/api',
