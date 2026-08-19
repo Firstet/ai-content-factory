@@ -20,23 +20,11 @@ function normalizeApiBaseUrl(url: string): string {
 }
 
 function getInternalApiUrl(): string {
-  const isDocker = fs.existsSync('/.dockerenv');
   const configuredUrl = process.env.INTERNAL_API_URL?.trim();
-
   if (configuredUrl) {
-    // If running on host machine (outside Docker), convert container hostname 'api' to '127.0.0.1'
-    let target = configuredUrl;
-    if (!isDocker && (target.includes('://api:') || target.includes('://api/'))) {
-      target = target.replace('://api', '://127.0.0.1');
-    }
-    return normalizeApiBaseUrl(target);
+    return normalizeApiBaseUrl(configuredUrl);
   }
-
-  if (isDocker) {
-    return 'http://api:3001/api';
-  }
-
-  return 'http://127.0.0.1:3001/api';
+  return 'http://api:3001/api';
 }
 
 async function proxyRequest(
@@ -52,20 +40,15 @@ async function proxyRequest(
     const pathString = Array.isArray(path) ? path.join('/') : (path || '');
     const searchParams = request.nextUrl.search || '';
 
-    const canonicalInternalUrl = getInternalApiUrl();
-    const isDocker = fs.existsSync('/.dockerenv');
+    const configured = getInternalApiUrl();
 
-    // Internal server-to-server proxy candidates
-    const rawCandidates = isDocker
-      ? [
-          canonicalInternalUrl,
-          'http://api:3001/api',
-        ]
-      : [
-          canonicalInternalUrl,
-          'http://127.0.0.1:3001/api',
-          'http://localhost:3001/api',
-        ];
+    // Internal server-to-server proxy candidates tried sequentially
+    const rawCandidates = [
+      configured,
+      'http://api:3001/api',
+      'http://127.0.0.1:3001/api',
+      'http://localhost:3001/api',
+    ];
 
     const candidates = Array.from(
       new Set(
