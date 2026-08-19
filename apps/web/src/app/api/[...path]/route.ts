@@ -50,6 +50,8 @@ async function proxyRequest(
       'http://api:3001/api',
       'http://backend:3001/api',
       'http://youtub-auto-api:3001/api',
+      'http://host.docker.internal:3001/api',
+      'http://172.17.0.1:3001/api',
       'http://127.0.0.1:3001/api',
       'http://localhost:3001/api',
     ];

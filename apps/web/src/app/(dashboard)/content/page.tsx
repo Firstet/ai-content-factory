@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Layers, Plus, Sparkles, Youtube, Instagram, Linkedin, CheckCircle2, Clock, AlertTriangle, ArrowRight } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://169.58.142.29:3001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export default function ContentPage() {
   const [projects, setProjects] = useState<any[]>([]);

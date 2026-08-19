@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Layers, Sparkles, Youtube, Instagram, Linkedin, RefreshCw, CheckCircle2, AlertTriangle, ArrowLeft, Image as ImageIcon, Volume2, FileText, LayoutGrid } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://169.58.142.29:3001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export default function ContentStudioDetailPage() {
   const params = useParams();

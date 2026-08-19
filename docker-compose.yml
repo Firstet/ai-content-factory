@@ -135,6 +135,8 @@ services:
       context: .
       dockerfile: infra/docker/Dockerfile.web
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
       - .env
     depends_on:

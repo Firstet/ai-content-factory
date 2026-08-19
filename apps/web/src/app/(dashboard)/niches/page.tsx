@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Compass, Sparkles, Plus, CheckCircle2, Search, ArrowRight, BrainCircuit, Users, Target, HelpCircle, Layers } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://169.58.142.29:3001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export default function NichesPage() {
   const [niches, setNiches] = useState<any[]>([]);

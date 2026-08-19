@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Layers, ArrowLeft, Check, ArrowRight } from 'lucide-react';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://169.58.142.29:3001/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 export default function NewContentCampaignPage() {
   const router = useRouter();
