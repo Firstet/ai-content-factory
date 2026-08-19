@@ -106,9 +106,9 @@ export class ApiKeysService {
     }
   }
 
-  async findAll(providerId?: string) {
-    const keyCount = await this.prisma.apiKey.count();
-    if (keyCount === 0) {
+  async ensureDefaultKeys() {
+    try {
+      // 1. Ensure NVIDIA API Key
       let nvidiaProvider = await this.prisma.provider.findFirst({ where: { name: 'NVIDIA' } });
       if (!nvidiaProvider) {
         nvidiaProvider = await this.prisma.provider.create({
@@ -121,22 +121,71 @@ export class ApiKeysService {
           },
         });
       }
-      await this.prisma.apiKey.create({
-        data: {
-          providerId: nvidiaProvider.id,
-          label: 'NVIDIA Production Key',
-          encryptedKey: this.crypto.encrypt('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'),
-          baseUrl: 'https://integrate.api.nvidia.com/v1',
-          platform: 'https://integrate.api.nvidia.com/v1|protocol:openai_compatible',
-          keyType: 'api',
-          status: 'CONNECTED',
-          discoveredModels: ['nvidia/nvidia-nemotron-nano-9b-v2', 'meta/llama-3.3-70b-instruct'],
-          discoveredCapabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING'],
-          lastTestedAt: new Date(),
-        },
+
+      const existingNvidiaKey = await this.prisma.apiKey.findFirst({
+        where: { providerId: nvidiaProvider.id },
       });
-      console.log('[ApiKeysService] Auto-seeded default NVIDIA API key into database.');
+
+      if (!existingNvidiaKey) {
+        await this.prisma.apiKey.create({
+          data: {
+            providerId: nvidiaProvider.id,
+            label: 'NVIDIA Production Key',
+            encryptedKey: this.crypto.encrypt('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'),
+            baseUrl: 'https://integrate.api.nvidia.com/v1',
+            platform: 'https://integrate.api.nvidia.com/v1|protocol:OpenAI-compatible',
+            keyType: 'api',
+            status: 'CONNECTED',
+            discoveredModels: ['nvidia/nvidia-nemotron-nano-9b-v2', 'meta/llama-3.3-70b-instruct', 'deepseek-ai/deepseek-r1'],
+            discoveredCapabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING', 'COPYWRITING'],
+            lastTestedAt: new Date(),
+          },
+        });
+        console.log('[ApiKeysService] Auto-seeded default NVIDIA API key into database.');
+      }
+
+      // 2. Ensure Pollinations AI Key
+      let pollinationsProvider = await this.prisma.provider.findFirst({ where: { name: 'POLLINATIONS' } });
+      if (!pollinationsProvider) {
+        pollinationsProvider = await this.prisma.provider.create({
+          data: {
+            name: 'POLLINATIONS',
+            displayName: 'Pollinations AI (LLM & Text)',
+            enabled: true,
+            capabilities: ['llm', 'text', 'image', 'video'],
+            preferredFor: ['script', 'research', 'image'],
+          },
+        });
+      }
+
+      const existingPollinationsKey = await this.prisma.apiKey.findFirst({
+        where: { providerId: pollinationsProvider.id },
+      });
+
+      if (!existingPollinationsKey) {
+        await this.prisma.apiKey.create({
+          data: {
+            providerId: pollinationsProvider.id,
+            label: 'Pollinations AI Primary Key',
+            encryptedKey: this.crypto.encrypt('sk_3hnTofWztm4BhpQftmPNzEnjWI4LWZkZ'),
+            baseUrl: 'https://gen.pollinations.ai',
+            platform: 'https://gen.pollinations.ai|protocol:OpenAI-compatible',
+            keyType: 'api',
+            status: 'CONNECTED',
+            discoveredModels: ['openai', 'openai-fast', 'qwen', 'mistral', 'llama', 'deepseek'],
+            discoveredCapabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING', 'IMAGE_GENERATION'],
+            lastTestedAt: new Date(),
+          },
+        });
+        console.log('[ApiKeysService] Auto-seeded default Pollinations API key into database.');
+      }
+    } catch (e: any) {
+      console.warn('[ApiKeysService] Error ensuring default API keys:', e.message);
     }
+  }
+
+  async findAll(providerId?: string) {
+    await this.ensureDefaultKeys();
 
     return this.prisma.apiKey.findMany({
       where: providerId ? (isUuid(providerId) ? { providerId } : { provider: { name: providerId.toUpperCase() } }) : {},
