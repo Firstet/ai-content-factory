@@ -140,13 +140,14 @@ services:
     env_file:
       - .env
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: "0.0.0.0"
       NEXT_PUBLIC_API_URL: "/api"
-      INTERNAL_API_URL: "http://api:3001/api"
+      INTERNAL_API_URL: "http://api:3001"
     ports:
       - "3002:3000"
     networks:
