@@ -50,7 +50,7 @@ COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 EXPOSE 3001
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=10s --start-period=120s --retries=15 \
   CMD curl -f http://localhost:3001/api/health || exit 1
 
-CMD ["sh", "-c", "npx prisma db push --schema=apps/api/prisma/schema.prisma --accept-data-loss || true; node apps/api/dist/main.js"]
+CMD ["sh", "-c", "npx prisma db push --schema=apps/api/prisma/schema.prisma --skip-generate --accept-data-loss || true; node apps/api/dist/main.js"]
