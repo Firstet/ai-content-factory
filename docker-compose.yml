@@ -93,6 +93,7 @@ services:
     build:
       context: .
       dockerfile: infra/docker/Dockerfile.api
+    container_name: api
     restart: unless-stopped
     env_file:
       - .env
@@ -120,7 +121,11 @@ services:
       retries: 10
       start_period: 60s
     networks:
-      - acf_network
+      acf_network:
+        aliases:
+          - api
+          - backend
+          - youtub-auto-api
 
   # ─────────────────────────────────────────
   # Next.js Web App Studio

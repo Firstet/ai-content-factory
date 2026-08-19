@@ -31,6 +31,8 @@ async function proxyRequest(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> }
 ) {
+  let primaryError: any = null;
+  let primaryDestination = '';
   let lastError: any = null;
   let lastDestination = '';
 
@@ -46,6 +48,8 @@ async function proxyRequest(
     const rawCandidates = [
       configured,
       'http://api:3001/api',
+      'http://backend:3001/api',
+      'http://youtub-auto-api:3001/api',
       'http://127.0.0.1:3001/api',
       'http://localhost:3001/api',
     ];
@@ -79,12 +83,16 @@ async function proxyRequest(
       }
     }
 
-    for (const baseUrl of candidates) {
+    for (let i = 0; i < candidates.length; i++) {
+      const baseUrl = candidates[i];
       const targetHost = baseUrl.replace(/\/$/, '');
       const destinationUrl = `${targetHost}/${pathString}${searchParams}`;
+      if (i === 0) {
+        primaryDestination = destinationUrl;
+      }
       lastDestination = destinationUrl;
 
-      // Retry transient container DNS / startup errors up to 2 times
+      // Retry transient container DNS / startup errors up to 3 attempts
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
           const response = await fetch(destinationUrl, {
@@ -110,12 +118,17 @@ async function proxyRequest(
             headers: responseHeaders,
           });
         } catch (err: any) {
+          if (i === 0 && !primaryError) {
+            primaryError = err;
+          }
           lastError = err;
+
           const code = (err as any)?.cause?.code || (err as any)?.code || 'UNKNOWN';
           const isTransient = ['EAI_AGAIN', 'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 'FETCH_ERROR'].includes(code);
 
           console.warn('[AI_PROVIDER_PROXY_FETCH_ATTEMPT_FAILED]', {
             attempt,
+            candidateIndex: i,
             url: sanitizeUrl(destinationUrl),
             method: request.method,
             errorName: err instanceof Error ? err.name : undefined,
@@ -133,16 +146,19 @@ async function proxyRequest(
       }
     }
 
-    throw lastError || new Error('All internal API proxy candidates failed');
+    throw primaryError || lastError || new Error('All internal API proxy candidates failed');
   } catch (err: any) {
-    const causeCode = err?.cause?.code || err?.code || 'ECONNREFUSED';
+    const activeErr = primaryError || err;
+    const activeDest = primaryDestination || lastDestination;
+
+    const causeCode = activeErr?.cause?.code || activeErr?.code || 'ECONNREFUSED';
 
     let causeAddressPort = '';
-    if (err?.cause?.address && err?.cause?.port) {
-      causeAddressPort = ` ${err.cause.address}:${err.cause.port}`;
-    } else if (lastDestination) {
+    if (activeErr?.cause?.address && activeErr?.cause?.port) {
+      causeAddressPort = ` ${activeErr.cause.address}:${activeErr.cause.port}`;
+    } else if (activeDest) {
       try {
-        const parsed = new URL(lastDestination);
+        const parsed = new URL(activeDest);
         causeAddressPort = ` ${parsed.host}`;
       } catch {
         causeAddressPort = ' api:3001';
@@ -154,10 +170,10 @@ async function proxyRequest(
     const causeDetails = `(${causeCode}${causeAddressPort})`;
 
     console.error('[API Proxy Fatal Error]:', {
-      destination: sanitizeUrl(lastDestination),
-      errorName: err?.name,
-      errorMessage: err?.message,
-      cause: err?.cause,
+      destination: sanitizeUrl(activeDest),
+      errorName: activeErr?.name,
+      errorMessage: activeErr?.message,
+      cause: activeErr?.cause,
     });
 
     return NextResponse.json(
@@ -165,12 +181,12 @@ async function proxyRequest(
         error: 'INTERNAL_API_UNREACHABLE',
         code: causeCode,
         message: `Unable to reach the API server ${causeDetails}. Check the API service status and try again.`,
-        cause: err?.cause
+        cause: activeErr?.cause
           ? {
-              code: err.cause.code,
-              address: err.cause.address || 'api',
-              port: err.cause.port || 3001,
-              syscall: err.cause.syscall,
+              code: activeErr.cause.code,
+              address: activeErr.cause.address || 'api',
+              port: activeErr.cause.port || 3001,
+              syscall: activeErr.cause.syscall,
             }
           : {
               code: causeCode,
