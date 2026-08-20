@@ -85,6 +85,8 @@ export default function NewContentCampaignPage() {
   };
 
   return (
+    <Shell>
+      <div className="p-8 max-w-4xl mx-auto space-y-8">
         <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
           <Sparkles className="w-8 h-8 text-indigo-400" /> New Multi-Platform Content Campaign
         </h1>
