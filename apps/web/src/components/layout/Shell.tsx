@@ -1,14 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
-  const [isSidebarPinned, setIsSidebarPinned] = useState(false);
+  const [isSidebarPinned, setIsSidebarPinned] = useState(true);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const isExpanded = isSidebarPinned || isSidebarHovered;
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('acf_sidebar_pinned');
+      if (saved !== null) {
+        setIsSidebarPinned(saved === 'true');
+      }
+    }
+  }, []);
+
+  const handleTogglePin = () => {
+    setIsSidebarPinned((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('acf_sidebar_pinned', String(next));
+      }
+      return next;
+    });
+  };
+
+  const isExpanded = isSidebarPinned || isSidebarHovered || isMobileOpen;
 
   return (
     <div className="min-h-screen bg-[#070a12] text-slate-100 flex relative overflow-x-hidden">
@@ -20,17 +40,19 @@ export function Shell({ children }: { children: React.ReactNode }) {
       <Sidebar
         isExpanded={isExpanded}
         isPinned={isSidebarPinned}
+        isMobileOpen={isMobileOpen}
+        onCloseMobile={() => setIsMobileOpen(false)}
         onMouseEnter={() => setIsSidebarHovered(true)}
         onMouseLeave={() => setIsSidebarHovered(false)}
-        onTogglePin={() => setIsSidebarPinned((prev) => !prev)}
+        onTogglePin={handleTogglePin}
       />
       <div
         className={`flex-1 flex flex-col min-w-0 relative z-10 transition-all duration-300 ease-in-out ${
-          isExpanded ? 'pl-64' : 'pl-20'
+          isSidebarPinned ? 'md:pl-64 pl-0' : 'md:pl-20 pl-0'
         }`}
       >
-        <Header />
-        <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+        <Header onToggleMobileMenu={() => setIsMobileOpen((prev) => !prev)} />
+        <main className="flex-1 p-4 md:p-8 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

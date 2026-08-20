@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, Search, PlusCircle, LogOut, Zap, Play, Pause } from 'lucide-react';
+import { Bell, Search, PlusCircle, LogOut, Zap, Play, Pause, Menu } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-export function Header() {
+interface HeaderProps {
+  onToggleMobileMenu?: () => void;
+}
+
+export function Header({ onToggleMobileMenu }: HeaderProps) {
   const { user, logout } = useAppStore();
   const router = useRouter();
   const [automationActive, setAutomationActive] = useState(true);
@@ -17,15 +21,27 @@ export function Header() {
   };
 
   return (
-    <header className="h-16 border-b border-white/10 bg-slate-950/60 backdrop-blur-2xl px-8 flex items-center justify-between sticky top-0 z-30">
-      {/* Search Bar */}
-      <div className="relative w-80">
-        <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-        <input
-          type="text"
-          placeholder="Search content plans, scheduled posts, channels..."
-          className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 transition-all"
-        />
+    <header className="h-16 border-b border-white/10 bg-slate-950/60 backdrop-blur-2xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-30">
+      {/* Mobile Menu Button & Search Bar */}
+      <div className="flex items-center gap-3 w-auto md:w-80">
+        {onToggleMobileMenu && (
+          <button
+            onClick={onToggleMobileMenu}
+            className="p-2 rounded-xl bg-slate-900 border border-white/10 text-slate-300 hover:text-white md:hidden"
+            title="Toggle Menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+
+        <div className="relative w-full hidden sm:block">
+          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            placeholder="Search content plans, scheduled posts, channels..."
+            className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 transition-all"
+          />
+        </div>
       </div>
 
       {/* Center/Right Actions & User Controls */}

@@ -30,6 +30,8 @@ const mainNav = [
 interface SidebarProps {
   isExpanded: boolean;
   isPinned: boolean;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onTogglePin: () => void;
@@ -38,6 +40,8 @@ interface SidebarProps {
 export function Sidebar({
   isExpanded,
   isPinned,
+  isMobileOpen,
+  onCloseMobile,
   onMouseEnter,
   onMouseLeave,
   onTogglePin,
@@ -45,13 +49,22 @@ export function Sidebar({
   const pathname = usePathname();
 
   return (
-    <aside
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      className={`border-r border-white/10 bg-slate-950/90 backdrop-blur-2xl flex flex-col h-screen fixed left-0 top-0 z-40 shadow-2xl transition-all duration-300 ease-in-out ${
-        isExpanded ? 'w-64' : 'w-20'
-      }`}
-    >
+    <>
+      {/* Mobile Drawer Backdrop */}
+      {isMobileOpen && (
+        <div
+          onClick={onCloseMobile}
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 md:hidden"
+        />
+      )}
+
+      <aside
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        className={`border-r border-white/10 bg-slate-950/95 backdrop-blur-2xl flex flex-col h-screen fixed left-0 top-0 z-50 shadow-2xl transition-all duration-300 ease-in-out ${
+          isMobileOpen ? 'w-64 translate-x-0' : isExpanded ? 'w-64 translate-x-0' : 'w-20 -translate-x-full md:translate-x-0'
+        }`}
+      >
       {/* Brand Header */}
       <div className="h-16 px-4 flex items-center justify-between border-b border-white/10 bg-slate-950/95 overflow-hidden shrink-0">
         <div className="flex items-center gap-3 min-w-0">
@@ -159,5 +172,6 @@ export function Sidebar({
         </div>
       </div>
     </aside>
+    </>
   );
 }
