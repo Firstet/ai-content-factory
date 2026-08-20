@@ -38,8 +38,9 @@ export class ContentProjectService {
         brand = await this.prisma.brand.create({
           data: {
             name: 'AI Content Studio Main',
+            slug: `ai-studio-main-${Date.now()}`,
             voiceTone: 'Professional, Engaging, and Insightful',
-            targetAudience: 'Global Creators & Professionals',
+            niche: 'Technology & Business',
           },
         });
         brandId = brand.id;
