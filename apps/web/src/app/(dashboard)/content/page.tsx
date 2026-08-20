@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Shell } from '@/components/layout/Shell';
 import {
   Layers,
   Plus,
@@ -159,7 +160,8 @@ export default function ContentStudioPage() {
   });
 
   return (
-    <div className="p-6 md:p-10 space-y-8 max-w-7xl mx-auto min-h-screen">
+    <Shell>
+      <div className="p-6 md:p-10 space-y-8 max-w-7xl mx-auto min-h-screen">
       {/* ─── Top Studio Banner ─────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
         <div className="space-y-2">
@@ -520,6 +522,7 @@ export default function ContentStudioPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </Shell>
   );
 }

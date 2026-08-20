@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Shell } from '@/components/layout/Shell';
 import { Compass, Sparkles, Plus, CheckCircle2, Search, ArrowRight, BrainCircuit, Users, Target, HelpCircle, Layers } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -69,7 +70,8 @@ export default function NichesPage() {
   };
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <Shell>
+      <div className="p-8 space-y-8 max-w-7xl mx-auto">
       {/* Top Header Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/20 p-8 shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-10" />
@@ -296,6 +298,7 @@ export default function NichesPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </Shell>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Shell } from '@/components/layout/Shell';
 import { Sparkles, Layers, ArrowLeft, Check, ArrowRight } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
@@ -64,7 +65,7 @@ export default function NewContentCampaignPage() {
           brandId: selectedBrand,
           nicheId: selectedNiche || undefined,
           goal,
-          platforms: selectedPlatforms,
+          targetPlatforms: selectedPlatforms,
           aspectRatio,
           captionStyle,
           captionPosition,
@@ -84,12 +85,6 @@ export default function NewContentCampaignPage() {
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
-      <button onClick={() => router.back()} className="inline-flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white">
-        <ArrowLeft className="w-4 h-4" /> Back to Content Studio
-      </button>
-
-      <div className="space-y-2">
         <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
           <Sparkles className="w-8 h-8 text-indigo-400" /> New Multi-Platform Content Campaign
         </h1>
@@ -282,6 +277,7 @@ export default function NewContentCampaignPage() {
           </button>
         </div>
       </form>
-    </div>
+      </div>
+    </Shell>
   );
 }
