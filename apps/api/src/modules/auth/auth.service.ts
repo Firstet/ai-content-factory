@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   ForbiddenException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -13,15 +14,50 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private config: ConfigService,
   ) {}
 
+  async onModuleInit() {
+    await this.ensureDefaultAdminUser();
+  }
+
+  async ensureDefaultAdminUser() {
+    try {
+      const email = 'admin@aicontentfactory.local';
+      const existing = await this.prisma.user.findUnique({ where: { email } });
+      if (!existing) {
+        const passwordHash = await bcrypt.hash('ChangeMe!2024', 12);
+        await this.prisma.user.create({
+          data: {
+            id: 'user-admin-id',
+            email,
+            name: 'Content Studio Admin',
+            passwordHash,
+            role: 'ADMIN',
+            isActive: true,
+          },
+        });
+        console.log('[AuthService] Auto-seeded default admin user (admin@aicontentfactory.local).');
+      }
+    } catch (err: any) {
+      console.warn('[AuthService] Error seeding default admin user:', err.message);
+    }
+  }
+
   async validateUser(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    let user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // Auto-provision default admin if logging in with default credentials
+      if (email === 'admin@aicontentfactory.local' && password === 'ChangeMe!2024') {
+        await this.ensureDefaultAdminUser();
+        user = await this.prisma.user.findUnique({ where: { email } });
+      }
+    }
+
     if (!user || !user.isActive) return null;
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
