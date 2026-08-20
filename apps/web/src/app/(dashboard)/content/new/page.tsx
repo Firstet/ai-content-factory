@@ -87,15 +87,16 @@ export default function NewContentCampaignPage() {
   return (
     <Shell>
       <div className="p-8 max-w-4xl mx-auto space-y-8">
-        <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-          <Sparkles className="w-8 h-8 text-indigo-400" /> New Multi-Platform Content Campaign
-        </h1>
-        <p className="text-xs text-slate-400">
-          Configure your core campaign parameters. Our AI Operating System will automatically write a Master Narrative and adapt it into YouTube scripts, Instagram Carousels, TikTok scenes, LinkedIn posts, and promotional flyers.
-        </p>
-      </div>
+        <div className="space-y-2">
+          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <Sparkles className="w-8 h-8 text-indigo-400" /> New Multi-Platform Content Campaign
+          </h1>
+          <p className="text-xs text-slate-400">
+            Configure your core campaign parameters. Our AI Operating System will automatically write a Master Narrative and adapt it into YouTube scripts, Instagram Carousels, TikTok scenes, LinkedIn posts, and promotional flyers.
+          </p>
+        </div>
 
-      <form onSubmit={handleSubmit} className="bg-slate-900/80 border border-white/10 rounded-3xl p-8 space-y-8 backdrop-blur-xl shadow-2xl">
+        <form onSubmit={handleSubmit} className="bg-slate-900/80 border border-white/10 rounded-3xl p-8 space-y-8 backdrop-blur-xl shadow-2xl">
         {/* Campaign Title */}
         <div className="space-y-2">
           <label className="text-xs font-black uppercase tracking-wider text-indigo-300">1. Campaign Title / Topic</label>
