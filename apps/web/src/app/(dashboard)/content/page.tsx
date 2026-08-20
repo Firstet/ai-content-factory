@@ -374,19 +374,19 @@ export default function ContentStudioPage() {
               <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 mt-auto">
                 <div className="flex items-center gap-2">
                   {(proj.platforms?.includes('YOUTUBE') || !proj.platforms) && (
-                    <Youtube className="w-4 h-4 text-red-400" title="YouTube" />
+                    <Youtube className="w-4 h-4 text-red-400" />
                   )}
                   {(proj.platforms?.includes('INSTAGRAM') || !proj.platforms) && (
-                    <Instagram className="w-4 h-4 text-pink-400" title="Instagram" />
+                    <Instagram className="w-4 h-4 text-pink-400" />
                   )}
                   {(proj.platforms?.includes('TIKTOK') || !proj.platforms) && (
-                    <Video className="w-4 h-4 text-cyan-400" title="TikTok" />
+                    <Video className="w-4 h-4 text-cyan-400" />
                   )}
                   {(proj.platforms?.includes('LINKEDIN') || !proj.platforms) && (
-                    <Linkedin className="w-4 h-4 text-blue-400" title="LinkedIn" />
+                    <Linkedin className="w-4 h-4 text-blue-400" />
                   )}
                   {proj.platforms?.includes('FLYER') && (
-                    <FileText className="w-4 h-4 text-amber-400" title="Flyer" />
+                    <FileText className="w-4 h-4 text-amber-400" />
                   )}
                 </div>
 
