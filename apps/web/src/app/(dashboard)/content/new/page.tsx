@@ -14,6 +14,9 @@ export default function NewContentCampaignPage() {
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedNiche, setSelectedNiche] = useState('');
   const [goal, setGoal] = useState('ENGAGEMENT');
+  const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [captionStyle, setCaptionStyle] = useState('HORMOZI_YELLOW');
+  const [captionPosition, setCaptionPosition] = useState('BOTTOM');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['YOUTUBE', 'INSTAGRAM', 'TIKTOK', 'LINKEDIN']);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,6 +65,9 @@ export default function NewContentCampaignPage() {
           nicheId: selectedNiche || undefined,
           goal,
           platforms: selectedPlatforms,
+          aspectRatio,
+          captionStyle,
+          captionPosition,
         }),
       });
       const project = await res.json();
@@ -165,9 +171,72 @@ export default function NewContentCampaignPage() {
           </div>
         </div>
 
+        {/* Video Aspect Ratio & Caption Styling Engine */}
+        <div className="space-y-4 pt-2 border-t border-white/10">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-black uppercase tracking-wider text-indigo-300 flex items-center gap-2">
+              5. Video Aspect Ratio & Subtitle Engine
+            </label>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              InVideo / CapCut Engine
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {[
+              { ratio: '16:9', label: '16:9 Landscape (YouTube/TV)', icon: '📺' },
+              { ratio: '9:16', label: '9:16 Vertical (TikTok/Reels)', icon: '📱' },
+              { ratio: '1:1', label: '1:1 Square (Feed/LinkedIn)', icon: '🖼️' },
+            ].map((item) => (
+              <button
+                type="button"
+                key={item.ratio}
+                onClick={() => setAspectRatio(item.ratio)}
+                className={`p-3.5 rounded-2xl border text-xs font-bold text-left transition-all flex items-center gap-3 ${
+                  aspectRatio === item.ratio
+                    ? 'bg-indigo-600/30 border-indigo-500 text-white shadow-lg shadow-indigo-600/20'
+                    : 'bg-slate-950 border-white/10 text-slate-400 hover:text-white'
+                }`}
+              >
+                <span className="text-xl">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-slate-400 mb-1">Caption Style Preset</label>
+              <select
+                value={captionStyle}
+                onChange={(e) => setCaptionStyle(e.target.value)}
+                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-indigo-500"
+              >
+                <option value="HORMOZI_YELLOW">⚡ Alex Hormozi Yellow (High Retention)</option>
+                <option value="NEON_CYBERPUNK">💎 Neon Cyberpunk Glow</option>
+                <option value="MINIMALIST_DARK">✨ Minimalist Clean Dark Pill</option>
+                <option value="BOLD_WHITE">🔥 Bold Impact Caps White</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-extrabold uppercase text-slate-400 mb-1">Caption Screen Position</label>
+              <select
+                value={captionPosition}
+                onChange={(e) => setCaptionPosition(e.target.value)}
+                className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-200 font-bold focus:outline-none focus:border-indigo-500"
+              >
+                <option value="BOTTOM">Bottom Center (Standard)</option>
+                <option value="MIDDLE">Middle Center (Viral Shorts)</option>
+                <option value="TOP">Top Third (Banner Overlay)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* Target Platforms */}
         <div className="space-y-3">
-          <label className="text-xs font-black uppercase tracking-wider text-indigo-300">5. Target Platforms & Formats</label>
+          <label className="text-xs font-black uppercase tracking-wider text-indigo-300">6. Target Platforms & Formats</label>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
               { id: 'YOUTUBE', label: 'YouTube (8-Min Doc)' },

@@ -97,6 +97,9 @@ model Brand {
   voiceTone         String         @default("Professional and engaging")
   styleGuide        String?        @db.Text
   videoStrategy     VideoStrategy  @default(FFMPEG_ASSEMBLY)
+  aspectRatio       String         @default("16:9") // 16:9, 9:16, 1:1
+  captionStyle      String         @default("HORMOZI_YELLOW") // HORMOZI_YELLOW, NEON_CYBERPUNK, MINIMALIST_DARK, BOLD_WHITE
+  captionPosition   String         @default("BOTTOM") // BOTTOM, MIDDLE, TOP
   isActive          Boolean        @default(true)
 
   // Auto-Pilot Content Engine Configuration
@@ -236,6 +239,9 @@ model ContentProject {
   formats         String[] @default(["VIDEO", "CAROUSEL", "FLYER"])
   periodDays      Int      @default(7)
   status          String   @default("DRAFT") // DRAFT, GENERATING, COMPLETED, FAILED
+  aspectRatio     String   @default("16:9") // 16:9, 9:16, 1:1
+  captionStyle    String   @default("HORMOZI_YELLOW") // HORMOZI_YELLOW, NEON_CYBERPUNK, MINIMALIST_DARK, BOLD_WHITE
+  captionPosition String   @default("BOTTOM") // BOTTOM, MIDDLE, TOP
   masterNarrative Json     @default("{}")
   
   userId          String?

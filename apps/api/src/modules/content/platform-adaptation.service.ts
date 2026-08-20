@@ -29,6 +29,8 @@ Key Points: ${master.keyPoints.join(', ')}
 CTA: ${master.cta}
 Brand Voice: ${master.brandContext?.voiceTone || 'Professional and engaging'}
 
+CRITICAL FOR VISUAL PROMPTS & B-ROLL: Every "visualPrompt" MUST be a detailed, highly descriptive 8K cinematic image/video prompt (e.g., "Cinematic 8k photorealistic shot of futuristic neon tech laboratory, volumetric lighting, Octane render, shallow depth of field, dramatic shadows").
+
 Return JSON:
 {
   "title": "YouTube Title",
@@ -39,7 +41,7 @@ Return JSON:
       "content": "Full narration text...",
       "durationSeconds": 120,
       "visualType": "AI_IMAGE",
-      "visualPrompt": "Detailed visual scene prompt",
+      "visualPrompt": "Cinematic 8k photorealistic scene prompt with camera lighting and composition",
       "onScreenText": "Key takeaway text"
     }
   ],
@@ -47,7 +49,7 @@ Return JSON:
   "seoKeywords": ["keyword1", "keyword2"]
 }`;
 
-    return this.router.generateStructuredText<any>(prompt, 'You are an expert YouTube producer.', 'scriptwriting');
+    return this.router.generateStructuredText<any>(prompt, 'You are an expert YouTube producer and visual director.', 'scriptwriting');
   }
 
   /**
@@ -61,6 +63,8 @@ Key Points: ${master.keyPoints.join(', ')}
 CTA: ${master.cta}
 Brand Voice: ${master.brandContext?.voiceTone || 'Bold & engaging'}
 
+CRITICAL: "visualPrompt" MUST describe a high-end 8k aesthetic graphic/background composition with lighting, textures, and gradient accents.
+
 Return JSON:
 {
   "title": "Carousel Title",
@@ -69,14 +73,14 @@ Return JSON:
       "slideIndex": 1,
       "headline": "Cover Headline",
       "bodyText": "Subtitle copy",
-      "visualPrompt": "Cover graphic visual prompt",
+      "visualPrompt": "Ultra-HD 8k dark glassmorphic cover graphic prompt with luminous accents",
       "designDirection": "Dark gradient, bold typography"
     },
     {
       "slideIndex": 2,
       "headline": "Slide Headline",
       "bodyText": "1-2 concise bullet points",
-      "visualPrompt": "Minimalist diagram visual prompt",
+      "visualPrompt": "Clean 8k minimalist diagram or visual graphic prompt",
       "designDirection": "Clean card layout"
     }
   ],
@@ -84,7 +88,7 @@ Return JSON:
   "hashtags": ["#AI", "#Tech"]
 }`;
 
-    return this.router.generateStructuredText<any>(prompt, 'You are a viral Instagram carousel designer.', 'copywriting');
+    return this.router.generateStructuredText<any>(prompt, 'You are a viral Instagram carousel designer and visual director.', 'copywriting');
   }
 
   /**
@@ -96,6 +100,8 @@ Title: ${master.title}
 Thesis: ${master.thesis}
 CTA: ${master.cta}
 
+CRITICAL FOR B-ROLL: Every "visualPrompt" MUST be a 4k/8k fast-paced cinematic motion shot prompt (e.g., "Cinematic 8k dynamic drone shot gliding over modern futuristic city skyline, sunset reflections, IMAX 60fps feel").
+
 Return JSON:
 {
   "title": "TikTok Title",
@@ -105,14 +111,14 @@ Return JSON:
       "narrationText": "Spoken line",
       "durationSeconds": 5,
       "visualType": "B_ROLL",
-      "visualPrompt": "Fast motion camera visual prompt",
+      "visualPrompt": "Cinematic 8k fast motion camera visual prompt with dynamic lighting",
       "onScreenText": "BOLD CAPTION"
     }
   ],
   "caption": "TikTok caption + hashtags"
 }`;
 
-    return this.router.generateStructuredText<any>(prompt, 'You are a viral TikTok creator.', 'scriptwriting');
+    return this.router.generateStructuredText<any>(prompt, 'You are a viral TikTok creator and video director.', 'scriptwriting');
   }
 
   /**
@@ -151,7 +157,7 @@ Return JSON:
   "subheadline": "Supporting Subheadline",
   "bulletPoints": ["Benefit 1", "Benefit 2", "Benefit 3"],
   "ctaText": "Clear Call To Action",
-  "visualPrompt": "High-impact background poster graphic prompt",
+  "visualPrompt": "Cinematic 8k high-impact background poster graphic with 3D elements and dramatic lighting",
   "colorPalette": "Navy Blue, Cyber Gold, Pure White"
 }`;
 

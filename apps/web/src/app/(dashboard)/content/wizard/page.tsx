@@ -39,14 +39,17 @@ export default function ContentWizardPage() {
     logoUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80',
     watermarkUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80',
     watermarkPosition: 'bottom-right',
-    // Step 4: Colors
+    // Step 4: Aspect Ratio & Captions (InVideo / CapCut Style!)
+    aspectRatio: '16:9', // 16:9, 9:16, 1:1
+    captionStyle: 'HORMOZI_YELLOW', // HORMOZI_YELLOW, NEON_CYBERPUNK, MINIMALIST_DARK, BOLD_WHITE
+    captionPosition: 'BOTTOM', // BOTTOM, MIDDLE, TOP
     primaryColor: '#6366f1',
     themeStyle: 'Dark Cyberpunk',
     // Step 5: Social Accounts
     platforms: ['YouTube', 'TikTok'],
-    // Step 6: AI Providers
+    // Step 6: AI Providers & Neural Voice
     llmProvider: 'OpenAI GPT-4o',
-    voiceProvider: 'Piper (Local TTS - Free)',
+    voiceProvider: 'en-US-AndrewMultilingualNeural',
     // Step 7: Schedule
     longVideosPerDay: 1,
     shortsPerDay: 1,
@@ -58,9 +61,9 @@ export default function ContentWizardPage() {
     { num: 1, title: 'Choose Niche', icon: Layers },
     { num: 2, title: 'Describe Brand', icon: Building2 },
     { num: 3, title: 'Upload Logo', icon: ImageIcon },
-    { num: 4, title: 'Choose Colors', icon: Palette },
+    { num: 4, title: 'Aspect & Captions', icon: Palette },
     { num: 5, title: 'Social Accounts', icon: Tv },
-    { num: 6, title: 'AI Providers', icon: KeyRound },
+    { num: 6, title: 'Neural Voice', icon: KeyRound },
     { num: 7, title: 'Set Schedule', icon: Clock },
     { num: 8, title: 'Review', icon: CheckCircle2 },
     { num: 9, title: 'Start Automation', icon: Zap },
@@ -84,6 +87,9 @@ export default function ContentWizardPage() {
         watermarkUrl: formData.watermarkUrl,
         watermarkPosition: formData.watermarkPosition,
         niche: formData.niche,
+        aspectRatio: formData.aspectRatio,
+        captionStyle: formData.captionStyle,
+        captionPosition: formData.captionPosition,
         autoPilotEnabled: true,
         scheduleFrequency: 'TWICE_DAILY',
       });
@@ -286,29 +292,96 @@ export default function ContentWizardPage() {
             </div>
           )}
 
-          {/* STEP 4: CHOOSE COLORS */}
+          {/* STEP 4: ASPECT RATIO & CAPTION STYLING ENGINE */}
           {currentStep === 4 && (
             <div className="space-y-6 animate-in fade-in">
               <div>
-                <h2 className="text-lg font-black text-white">Step 4: Visual Theme & Branding Colors</h2>
-                <p className="text-xs text-slate-400 mt-1">Select video graphics theme and subtitle text styles.</p>
+                <h2 className="text-lg font-black text-white flex items-center gap-2">
+                  Step 4: Video Aspect Ratio & Caption Styling Engine
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    CapCut / InVideo Studio Mode
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400 mt-1">
+                  Choose your permanent video aspect ratio and customize automated captions across all channel outputs.
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {['Dark Cyberpunk', 'Clean Modern Light', 'Vibrant Neon', 'Minimalist Slate'].map((style) => (
-                  <button
-                    key={style}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, themeStyle: style })}
-                    className={`p-5 rounded-2xl border text-left transition-all ${
-                      formData.themeStyle === style
-                        ? 'bg-purple-600/30 border-purple-500 text-white shadow-lg shadow-purple-500/20'
-                        : 'bg-slate-900/60 border-white/5 text-slate-400 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="font-extrabold text-xs text-white">{style}</div>
-                  </button>
-                ))}
+              {/* 1. Permanent Video Aspect Ratio Selector */}
+              <div className="space-y-3">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-300">
+                  Select Video Aspect Ratio (Permanent Auto-Pilot Setting)
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { ratio: '16:9', title: '16:9 Landscape', desc: 'YouTube Longform, TV, Desktop', icon: '📺' },
+                    { ratio: '9:16', title: '9:16 Vertical', desc: 'TikTok, Shorts, IG Reels', icon: '📱' },
+                    { ratio: '1:1', title: '1:1 Square', desc: 'Instagram Feed, LinkedIn', icon: '🖼️' },
+                  ].map((item) => (
+                    <button
+                      key={item.ratio}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, aspectRatio: item.ratio })}
+                      className={`p-5 rounded-2xl border text-left transition-all ${
+                        formData.aspectRatio === item.ratio
+                          ? 'bg-gradient-to-br from-indigo-600/30 via-purple-600/30 to-indigo-600/20 border-indigo-500 text-white shadow-xl shadow-indigo-500/25 scale-[1.02]'
+                          : 'bg-slate-900/60 border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+                      }`}
+                    >
+                      <div className="text-2xl mb-2">{item.icon}</div>
+                      <div className="font-extrabold text-sm text-white">{item.title}</div>
+                      <div className="text-[11px] text-slate-400 mt-1">{item.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Caption Styling Engine Presets */}
+              <div className="space-y-3 pt-2">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-300">
+                  Caption Style Preset
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { id: 'HORMOZI_YELLOW', name: 'Alex Hormozi Yellow', bg: 'bg-yellow-400 text-slate-950 font-black px-3 py-1 rounded shadow-md' },
+                    { id: 'NEON_CYBERPUNK', name: 'Neon Cyberpunk', bg: 'bg-cyan-500 text-slate-950 font-black px-3 py-1 rounded shadow-md shadow-cyan-500/50' },
+                    { id: 'MINIMALIST_DARK', name: 'Minimalist Clean Pill', bg: 'bg-slate-900 text-white font-bold px-3 py-1 rounded-full border border-white/20' },
+                    { id: 'BOLD_WHITE', name: 'Bold Impact White', bg: 'text-white font-black text-sm tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, captionStyle: preset.id })}
+                      className={`p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                        formData.captionStyle === preset.id
+                          ? 'bg-purple-600/30 border-purple-500 text-white shadow-lg shadow-purple-500/20'
+                          : 'bg-slate-900/60 border-white/10 text-slate-400 hover:border-white/20'
+                      }`}
+                    >
+                      <div>
+                        <span className="font-extrabold text-xs text-white block">{preset.name}</span>
+                        <span className="text-[10px] text-slate-400">High retention text engine</span>
+                      </div>
+                      <div className={preset.bg}>SAMPLE CAPTION</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. Caption Position Selector */}
+              <div>
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-300 mb-2">
+                  Caption Screen Position
+                </label>
+                <select
+                  value={formData.captionPosition}
+                  onChange={(e) => setFormData({ ...formData, captionPosition: e.target.value })}
+                  className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="BOTTOM">Bottom Center (Standard)</option>
+                  <option value="MIDDLE">Middle Center (High Impact Shorts)</option>
+                  <option value="TOP">Top Third (Banner Overlay)</option>
+                </select>
               </div>
             </div>
           )}

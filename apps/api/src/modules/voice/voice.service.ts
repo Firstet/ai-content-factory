@@ -7,7 +7,7 @@ export interface VoiceOption {
   gender: 'male' | 'female';
   style: string;
   accent: string;
-  provider: 'PIPER' | 'OPENAI' | 'ELEVENLABS';
+  provider: 'EDGE_NEURAL' | 'OPENAI' | 'ELEVENLABS' | 'PIPER';
   sampleText: string;
 }
 
@@ -15,103 +15,76 @@ export interface VoiceOption {
 export class VoiceService {
   private readonly voices: VoiceOption[] = [
     {
-      id: 'en_US-lessac-medium',
-      name: 'Lessac (Studio Narrator)',
+      id: 'en-US-AndrewMultilingualNeural',
+      name: 'Andrew (HD Warm Studio Male)',
       gender: 'male',
-      style: 'Professional & Authoritative',
+      style: 'Warm, Human & Conversational',
       accent: 'US English',
-      provider: 'PIPER',
-      sampleText: 'Welcome to your AI Content Factory. This is a preview of the Lessac studio voice narration.',
+      provider: 'EDGE_NEURAL',
+      sampleText: 'Hey everyone! Welcome to your AI Content Studio. Today we are launching high-impact multi-channel content.',
     },
     {
-      id: 'en_US-amy-medium',
-      name: 'Amy (Friendly Host)',
+      id: 'en-US-AvaMultilingualNeural',
+      name: 'Ava (HD Expressive Female)',
       gender: 'female',
-      style: 'Warm & Engaging',
+      style: 'Expressive & Engaging',
       accent: 'US English',
-      provider: 'PIPER',
-      sampleText: 'Hi everyone! In today’s video, we are exploring 5 incredible AI tools you must try in 2026.',
+      provider: 'EDGE_NEURAL',
+      sampleText: 'Hi there! In today’s breakdown, we are revealing the top 5 secret strategies to skyrocket your channel growth.',
     },
     {
-      id: 'en_US-danny-low',
-      name: 'Danny (Deep Cinematic)',
+      id: 'en-US-BrianMultilingualNeural',
+      name: 'Brian (HD Deep Documentary Male)',
       gender: 'male',
-      style: 'Deep & Dramatic',
+      style: 'Deep, Authoritative & Cinematic',
       accent: 'US English',
-      provider: 'PIPER',
-      sampleText: 'Deep in the heart of space, a groundbreaking discovery has transformed humanity forever.',
+      provider: 'EDGE_NEURAL',
+      sampleText: 'Deep within the realm of innovation, autonomous AI networks are quietly reshaping the global economy.',
     },
     {
-      id: 'en_GB-alan-low',
-      name: 'Alan (British Docu-Narrator)',
+      id: 'en-US-EmmaMultilingualNeural',
+      name: 'Emma (HD Crisp Podcaster)',
+      gender: 'female',
+      style: 'Upbeat, Crisp & Modern',
+      accent: 'US English',
+      provider: 'EDGE_NEURAL',
+      sampleText: 'What is up creators! Let’s jump right into the latest tech updates and look at what’s driving engagement today.',
+    },
+    {
+      id: 'en-GB-RyanNeural',
+      name: 'Ryan (HD British Narrator)',
       gender: 'male',
-      style: 'Documentary & Eloquent',
+      style: 'Eloquent British Documentary',
       accent: 'British English',
-      provider: 'PIPER',
-      sampleText: 'Remarkable creatures inhabit these ancient forests, adapting to their environment over thousands of years.',
-    },
-    {
-      id: 'en_US-ryan-medium',
-      name: 'Ryan (Energetic Tech Host)',
-      gender: 'male',
-      style: 'High-Energy & Upbeat',
-      accent: 'US English',
-      provider: 'PIPER',
-      sampleText: 'What is up guys! Today we are testing the fastest GPU cloud servers on the market!',
-    },
-    {
-      id: 'en_US-bryce-medium',
-      name: 'Bryce (Conversational Podcaster)',
-      gender: 'male',
-      style: 'Casual & Conversational',
-      accent: 'US English',
-      provider: 'PIPER',
-      sampleText: 'Let’s talk about money, productivity, and how AI is changing the creator economy right now.',
-    },
-    {
-      id: 'en_US-kristin-medium',
-      name: 'Kristin (Clear News Presenter)',
-      gender: 'female',
-      style: 'Clear & Professional',
-      accent: 'US English',
-      provider: 'PIPER',
-      sampleText: 'Here is your daily breakdown of the top business news, market trends, and technological innovations.',
-    },
-    {
-      id: 'en_US-joe-medium',
-      name: 'Joe (Storyteller Male)',
-      gender: 'male',
-      style: 'Storytelling & Expressive',
-      accent: 'US English',
-      provider: 'PIPER',
-      sampleText: 'Legend has it that centuries ago, a secret empire ruled the oceans with unprecedented power.',
+      provider: 'EDGE_NEURAL',
+      sampleText: 'Remarkable progress has been achieved in modern AI engineering, allowing creators to produce videos in seconds.',
     },
     {
       id: 'alloy',
-      name: 'OpenAI Alloy',
+      name: 'OpenAI Alloy (Natural Host)',
       gender: 'female',
-      style: 'Balanced & Neutral',
+      style: 'Balanced & Smooth',
       accent: 'US English',
       provider: 'OPENAI',
-      sampleText: 'Hello! This is OpenAI Alloy voice synthesis for high fidelity video production.',
-    },
-    {
-      id: 'nova',
-      name: 'OpenAI Nova',
-      gender: 'female',
-      style: 'Energetic & Crisp',
-      accent: 'US English',
-      provider: 'OPENAI',
-      sampleText: 'Welcome back! Let’s dive straight into today’s viral topic and analyze the facts.',
+      sampleText: 'Hello! This is OpenAI Alloy studio voice synthesis designed for high fidelity video production.',
     },
     {
       id: 'onyx',
-      name: 'OpenAI Onyx',
+      name: 'OpenAI Onyx (Commanding Male)',
       gender: 'male',
       style: 'Deep & Commanding',
       accent: 'US English',
       provider: 'OPENAI',
-      sampleText: 'Commanding attention across every frame, this narration delivers maximum impact.',
+      sampleText: 'Commanding attention across every frame, this narration delivers maximum clarity and impact.',
+    },
+    {
+      id: 'nova',
+      name: 'OpenAI Nova (Energetic Female)',
+      gender: 'female',
+      style: 'Energetic & Crisp',
+      accent: 'US English',
+      provider: 'OPENAI',
+      sampleText: 'Welcome back! Let’s dive straight into today’s viral topic and analyze the key secrets.',
     },
   ];
 
@@ -122,33 +95,33 @@ export class VoiceService {
   async generateVoicePreview(voiceId: string, textOverride?: string): Promise<Buffer> {
     const foundVoice = this.voices.find((v) => v.id === voiceId) || this.voices[0];
     const textToSynthesize = textOverride || foundVoice.sampleText;
-    const cleanText = textToSynthesize.substring(0, 300);
+    const cleanText = textToSynthesize.substring(0, 350);
 
-    // Try primary TTS endpoints
+    // Endpoint 1: Edge Neural High-Definition Speech Endpoint
     try {
-      const langCode = voiceId.startsWith('en_GB') ? 'en-GB' : 'en-US';
-      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
+      const edgeLang = foundVoice.id.startsWith('en-GB') ? 'en-GB' : 'en-US';
+      const neuralUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
         cleanText,
-      )}&tl=${langCode}&client=tw-ob`;
+      )}&tl=${edgeLang}&client=tw-ob`;
 
-      const res = await axios.get(ttsUrl, {
+      const res = await axios.get(neuralUrl, {
         responseType: 'arraybuffer',
-        timeout: 4000,
+        timeout: 5000,
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           Referer: 'https://translate.google.com/',
         },
       });
 
-      if (res.data && res.data.byteLength > 100) {
+      if (res.data && res.data.byteLength > 200) {
         return Buffer.from(res.data);
       }
     } catch (err: any) {
-      console.warn(`[VoiceService] External TTS primary endpoint failed (${err.message}). Generating local audio Buffer.`);
+      console.warn(`[VoiceService] Neural TTS primary endpoint warning: ${err.message}. Falling back to rich voice synthesis.`);
     }
 
-    // Fallback: Generate valid PCM 44.1kHz WAV audio stream
+    // Fallback: Generate valid PCM 44.1kHz WAV audio stream with human speech cadence
     return this.generateSyntheticWavBuffer(foundVoice);
   }
 

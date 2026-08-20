@@ -12,6 +12,9 @@ export interface CreateProjectDto {
   platforms?: string[];
   formats?: string[];
   periodDays?: number;
+  aspectRatio?: string; // 16:9, 9:16, 1:1
+  captionStyle?: string; // HORMOZI_YELLOW, NEON_CYBERPUNK, MINIMALIST_DARK, BOLD_WHITE
+  captionPosition?: string; // BOTTOM, MIDDLE, TOP
 }
 
 @Injectable()
@@ -41,6 +44,9 @@ export class ContentProjectService {
             slug: `ai-studio-main-${Date.now()}`,
             voiceTone: 'Professional, Engaging, and Insightful',
             niche: 'Technology & Business',
+            aspectRatio: dto.aspectRatio || '16:9',
+            captionStyle: dto.captionStyle || 'HORMOZI_YELLOW',
+            captionPosition: dto.captionPosition || 'BOTTOM',
           },
         });
         brandId = brand.id;
@@ -58,6 +64,9 @@ export class ContentProjectService {
         platforms: dto.platforms || ['YOUTUBE', 'INSTAGRAM', 'TIKTOK', 'LINKEDIN'],
         formats: dto.formats || ['VIDEO', 'CAROUSEL', 'FLYER'],
         periodDays: dto.periodDays || 7,
+        aspectRatio: dto.aspectRatio || brand?.aspectRatio || '16:9',
+        captionStyle: dto.captionStyle || brand?.captionStyle || 'HORMOZI_YELLOW',
+        captionPosition: dto.captionPosition || brand?.captionPosition || 'BOTTOM',
         status: 'DRAFT',
       },
     });
