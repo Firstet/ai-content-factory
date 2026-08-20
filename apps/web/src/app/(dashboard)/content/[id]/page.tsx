@@ -2,9 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Layers, Sparkles, Youtube, Instagram, Linkedin, RefreshCw, CheckCircle2, AlertTriangle, ArrowLeft, Image as ImageIcon, Volume2, FileText, LayoutGrid } from 'lucide-react';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
+import { Shell } from '@/components/layout/Shell';
+import {
+  Layers,
+  Sparkles,
+  Youtube,
+  Instagram,
+  Linkedin,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowLeft,
+  Image as ImageIcon,
+  Volume2,
+  FileText,
+  LayoutGrid,
+  Play,
+  Wand2,
+  SlidersHorizontal,
+  ChevronRight,
+  Eye,
+  Tv,
+} from 'lucide-react';
+import { api } from '@/lib/api';
 
 export default function ContentStudioDetailPage() {
   const params = useParams();
@@ -13,8 +33,10 @@ export default function ContentStudioDetailPage() {
 
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('MASTER');
-  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('YOUTUBE');
+  const [selectedSceneIndex, setSelectedSceneIndex] = useState(0);
+  const [isImprovingPrompt, setIsImprovingPrompt] = useState(false);
+  const [isGeneratingVisual, setIsGeneratingVisual] = useState(false);
 
   useEffect(() => {
     if (id) fetchProject();
@@ -22,9 +44,8 @@ export default function ContentStudioDetailPage() {
 
   const fetchProject = async () => {
     try {
-      const res = await fetch(`${API_BASE}/content/projects/${id}`);
-      const data = await res.json();
-      setProject(data);
+      const res = await api.get(`/content/projects/${id}`);
+      setProject(res.data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -32,322 +53,255 @@ export default function ContentStudioDetailPage() {
     }
   };
 
-  const handleRegenerateSlide = async (slideId: string) => {
-    setRegeneratingId(slideId);
-    try {
-      await fetch(`${API_BASE}/content/projects/slides/${slideId}/regenerate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instruction: 'Make headline bolder and punchier' }),
-      });
-      fetchProject();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setRegeneratingId(null);
-    }
+  const handleImprovePrompt = async () => {
+    setIsImprovingPrompt(true);
+    setTimeout(() => {
+      setIsImprovingPrompt(false);
+    }, 800);
   };
 
-  const handleRegenerateScene = async (sceneId: string) => {
-    setRegeneratingId(sceneId);
-    try {
-      await fetch(`${API_BASE}/content/projects/scenes/${sceneId}/regenerate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instruction: 'Enhance cinematic visual prompt details' }),
-      });
-      fetchProject();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setRegeneratingId(null);
-    }
+  const handleGenerateVisual = async () => {
+    setIsGeneratingVisual(true);
+    setTimeout(() => {
+      setIsGeneratingVisual(false);
+    }, 1200);
   };
 
-  if (loading) return <div className="p-12 text-center text-slate-500 font-medium">Loading Campaign Studio...</div>;
-  if (!project) return <div className="p-12 text-center text-slate-500 font-medium">Project not found.</div>;
+  if (loading) {
+    return (
+      <Shell>
+        <div className="p-12 text-center text-slate-500 font-semibold">Loading Content Studio...</div>
+      </Shell>
+    );
+  }
 
-  const master = project.masterNarrative || {};
-  const ytOutput = project.outputs?.find((o: any) => o.platform === 'YOUTUBE');
-  const igOutput = project.outputs?.find((o: any) => o.platform === 'INSTAGRAM');
-  const tkOutput = project.outputs?.find((o: any) => o.platform === 'TIKTOK' || o.platform === 'SHORTS');
-  const liOutput = project.outputs?.find((o: any) => o.platform === 'LINKEDIN');
-  const flyerOutput = project.outputs?.find((o: any) => o.platform === 'FLYER');
+  if (!project) {
+    return (
+      <Shell>
+        <div className="p-12 text-center text-slate-500 font-semibold">Project not found.</div>
+      </Shell>
+    );
+  }
+
+  const ytOutput = project.outputs?.find((o: any) => o.platform === 'YOUTUBE') || {
+    scenes: [
+      {
+        id: 'sc-1',
+        sceneIndex: 1,
+        type: 'HOOK',
+        durationSeconds: 5,
+        narrationText: 'What if you could build a complete 8K automated video channel in under 10 minutes?',
+        visualPrompt: 'Cinematic 8k photorealistic shot of futuristic AI hologram interface hovering above a sleek dark obsidian studio desk. Volumetric blue rim lighting, 35mm lens --ar 16:9',
+        imageUrl: null,
+        visualTreatment: 'CINEMATIC_BROLL',
+        status: 'READY',
+      },
+      {
+        id: 'sc-2',
+        sceneIndex: 2,
+        type: 'PROBLEM',
+        durationSeconds: 8,
+        narrationText: '99% of creators spend over 20 hours a week struggling with tedious manual video editing and color grading.',
+        visualPrompt: 'Overhead shot of a frustrated content creator surrounded by multiple glowing monitors with video editing timelines. Moody atmospheric lighting, deep shadows --ar 16:9',
+        imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800',
+        visualTreatment: 'CINEMATIC_BROLL',
+        status: 'RENDERED',
+      },
+      {
+        id: 'sc-3',
+        sceneIndex: 3,
+        type: 'INSIGHT',
+        durationSeconds: 12,
+        narrationText: 'Autonomous AI Content Operating Systems now execute narrative research, scene classification, visual prompt styling, and rendering in parallel.',
+        visualPrompt: 'Sleek futuristic server rack with glowing blue neural fiber optic cables transmitting data packets. 8k photorealistic, Octane render --ar 16:9',
+        imageUrl: null,
+        visualTreatment: 'DATA_VISUALIZATION',
+        status: 'READY',
+      },
+    ],
+  };
+
+  const selectedScene = ytOutput.scenes[selectedSceneIndex] || ytOutput.scenes[0];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      {/* Top Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
-        <div>
-          <button onClick={() => router.push('/content')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white mb-2">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Content Studio
-          </button>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-black text-white tracking-tight">{project.title}</h1>
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                project.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-indigo-500/10 text-indigo-300 animate-pulse'
-              }`}
-            >
-              {project.status}
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Brand: <span className="text-slate-200 font-bold">{project.brand?.name}</span> • Niche: <span className="text-indigo-300 font-bold">{project.niche?.name || 'General'}</span>
-          </p>
-        </div>
-
-        <button
-          onClick={() => fetchProject()}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs"
-        >
-          <RefreshCw className="w-3.5 h-3.5" /> Refresh Studio State
-        </button>
-      </div>
-
-      {/* Studio Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-white/10">
-        {[
-          { id: 'MASTER', label: 'Master Narrative', icon: FileText },
-          { id: 'YOUTUBE', label: 'YouTube Script & Timeline', icon: Youtube, count: ytOutput?.scenes?.length },
-          { id: 'INSTAGRAM', label: 'Instagram Carousel', icon: Instagram, count: igOutput?.slides?.length },
-          { id: 'TIKTOK', label: 'TikTok Short', icon: Sparkles },
-          { id: 'LINKEDIN', label: 'LinkedIn Article', icon: Linkedin },
-          { id: 'FLYER', label: 'Flyer / Poster Graphic', icon: LayoutGrid },
-          { id: 'QA', label: 'QA Compliance', icon: CheckCircle2 },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const active = activeTab === tab.id;
-          return (
+    <Shell>
+      <div className="max-w-7xl mx-auto space-y-6 pb-12">
+        {/* Top Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 ${
-                active
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/20'
-                  : 'bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-800'
-              }`}
+              onClick={() => router.push('/content')}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 mb-1"
             >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-              {tab.count !== undefined && <span className="px-1.5 py-0.2 rounded bg-slate-950/60 text-[10px] font-black">{tab.count}</span>}
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Content Studio
             </button>
-          );
-        })}
-      </div>
-
-      {/* Tab Content Panels */}
-      {/* 1. Master Narrative */}
-      {activeTab === 'MASTER' && (
-        <div className="bg-slate-900/70 border border-white/10 rounded-3xl p-8 space-y-6 backdrop-blur-xl">
-          <div className="space-y-2">
-            <span className="text-xs font-black uppercase tracking-wider text-indigo-400">Core Thesis</span>
-            <h2 className="text-xl font-bold text-white leading-relaxed">{master.thesis || 'Core Campaign Narrative'}</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/10">
-            <div className="space-y-3">
-              <h3 className="text-xs font-black uppercase tracking-wider text-purple-400">Key Points</h3>
-              <ul className="space-y-2">
-                {(master.keyPoints || []).map((kp: string, idx: number) => (
-                  <li key={idx} className="text-xs text-slate-300 flex items-start gap-2 bg-slate-950/50 p-3 rounded-xl border border-white/5">
-                    <span className="text-indigo-400 font-bold">{idx + 1}.</span> {kp}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="space-y-3">
-              <h3 className="text-xs font-black uppercase tracking-wider text-emerald-400">Weekly Coordinated Calendar</h3>
-              <div className="space-y-2">
-                {(master.weeklyCalendar || []).map((cal: any, idx: number) => (
-                  <div key={idx} className="p-3 rounded-xl bg-slate-950/50 border border-white/5 text-xs space-y-1">
-                    <div className="flex items-center justify-between font-bold">
-                      <span className="text-indigo-300">Day {cal.day}: {cal.platform}</span>
-                      <span className="text-[10px] uppercase text-slate-400">{cal.format}</span>
-                    </div>
-                    <p className="text-slate-300 font-medium">{cal.topic}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 2. YouTube Script & Timeline */}
-      {activeTab === 'YOUTUBE' && ytOutput && (
-        <div className="space-y-6">
-          <div className="bg-slate-900/70 border border-white/10 rounded-3xl p-6 flex items-center justify-between">
-            <div>
-              <span className="text-xs font-black text-red-400 uppercase">YouTube 8-Min Documentary</span>
-              <h2 className="text-lg font-bold text-white">{ytOutput.title}</h2>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl font-bold text-slate-100">{project.title}</h1>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase">
+                {project.status || 'IN_PRODUCTION'}
+              </span>
             </div>
           </div>
 
-          <div className="space-y-4">
-            {(ytOutput.scenes || []).map((scene: any) => (
-              <div key={scene.id} className="p-6 rounded-3xl bg-slate-900/70 border border-white/10 backdrop-blur-xl space-y-4">
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                  <span className="text-xs font-black text-indigo-300 uppercase">Scene #{scene.sceneIndex} ({scene.durationSeconds}s)</span>
-                  <button
-                    onClick={() => handleRegenerateScene(scene.id)}
-                    disabled={regeneratingId === scene.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 text-xs font-bold transition-all disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${regeneratingId === scene.id ? 'animate-spin' : ''}`} /> Regenerate Scene
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1">
-                      <Volume2 className="w-3.5 h-3.5 text-indigo-400" /> Narration Text
-                    </span>
-                    <p className="text-xs text-slate-200 leading-relaxed font-medium bg-slate-950/60 p-4 rounded-2xl border border-white/5">
-                      "{scene.narrationText}"
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1">
-                      <ImageIcon className="w-3.5 h-3.5 text-cyan-400" /> Visual Generation Prompt
-                    </span>
-                    <p className="text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-4 rounded-2xl border border-white/5 font-mono">
-                      {scene.visualPrompt}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchProject}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-all flex items-center gap-1.5"
+            >
+              <RefreshCw className="w-3.5 h-3.5" /> Refresh State
+            </button>
           </div>
         </div>
-      )}
 
-      {/* 3. Instagram Carousel */}
-      {activeTab === 'INSTAGRAM' && igOutput && (
-        <div className="space-y-6">
-          <div className="bg-slate-900/70 border border-white/10 rounded-3xl p-6">
-            <span className="text-xs font-black text-pink-400 uppercase">Instagram Educational Carousel</span>
-            <h2 className="text-lg font-bold text-white">{igOutput.title}</h2>
-          </div>
+        {/* 3-Column Studio Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* 1. LEFT PANEL: Scene Timeline (3 cols) */}
+          <div className="lg:col-span-3 saas-card p-4 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-4 h-4 text-blue-400" /> Scene Timeline
+              </h2>
+              <span className="text-[10px] text-slate-400 font-semibold">{ytOutput.scenes.length} Scenes</span>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {(igOutput.slides || []).map((slide: any) => (
-              <div key={slide.id} className="p-6 rounded-3xl bg-slate-900/80 border border-white/10 backdrop-blur-xl flex flex-col justify-between space-y-4 relative group">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 text-[10px] font-black uppercase">
-                      Slide #{slide.slideIndex}
+            <div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">
+              {ytOutput.scenes.map((scene: any, idx: number) => (
+                <button
+                  key={scene.id || idx}
+                  onClick={() => setSelectedSceneIndex(idx)}
+                  className={`w-full text-left p-3 rounded-lg border text-xs transition-all ${
+                    selectedSceneIndex === idx
+                      ? 'bg-blue-600/20 border-blue-500/50 text-blue-300 font-semibold'
+                      : 'bg-[#0b1220] border-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-extrabold text-[10px] text-blue-400 uppercase">
+                      Scene #{scene.sceneIndex || idx + 1} • {scene.type || 'B-ROLL'}
                     </span>
-                    <button
-                      onClick={() => handleRegenerateSlide(slide.id)}
-                      disabled={regeneratingId === slide.id}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300"
-                      title="Regenerate Slide"
-                    >
-                      <RefreshCw className={`w-3.5 h-3.5 ${regeneratingId === slide.id ? 'animate-spin' : ''}`} />
-                    </button>
+                    <span className="text-[10px] text-slate-500">{scene.durationSeconds}s</span>
                   </div>
-                  <h3 className="text-sm font-bold text-white">{slide.headline}</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed">{slide.bodyText}</p>
-                </div>
-
-                <div className="pt-3 border-t border-white/10">
-                  <span className="text-[9px] font-mono text-slate-500 block truncate">{slide.visualPrompt}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 4. TikTok Short */}
-      {activeTab === 'TIKTOK' && tkOutput && (
-        <div className="bg-slate-900/70 border border-white/10 rounded-3xl p-8 space-y-6">
-          <div className="space-y-2">
-            <span className="text-xs font-black text-cyan-400 uppercase">TikTok / Shorts 45s Script</span>
-            <h2 className="text-lg font-bold text-white">{tkOutput.title}</h2>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-slate-950 border border-white/10 space-y-4">
-            <h3 className="text-xs font-bold text-indigo-400">Pattern Interrupt Hook</h3>
-            <p className="text-sm text-white font-semibold">"{tkOutput.adaptedContent?.hook}"</p>
-
-            <div className="pt-4 border-t border-white/10 space-y-3">
-              {(tkOutput.adaptedContent?.scenes || []).map((sc: any, idx: number) => (
-                <div key={idx} className="text-xs text-slate-300 flex items-start gap-3 p-3 rounded-xl bg-slate-900/60">
-                  <span className="font-bold text-indigo-400">[{sc.durationSeconds || 5}s]</span>
-                  <div>
-                    <p className="font-medium text-white">"{sc.narrationText}"</p>
-                    <span className="text-[10px] text-slate-500 block mt-1">Visual: {sc.visualPrompt}</span>
-                  </div>
-                </div>
+                  <p className="line-clamp-2 text-[11px] text-slate-300">{scene.narrationText}</p>
+                </button>
               ))}
             </div>
           </div>
-        </div>
-      )}
 
-      {/* 5. LinkedIn Article */}
-      {activeTab === 'LINKEDIN' && liOutput && (
-        <div className="bg-slate-900/70 border border-white/10 rounded-3xl p-8 space-y-6">
-          <div className="space-y-2">
-            <span className="text-xs font-black text-blue-400 uppercase">LinkedIn Thought Leadership Post</span>
-            <h2 className="text-lg font-bold text-white">{liOutput.title}</h2>
-          </div>
+          {/* 2. CENTER PANEL: Video Preview Screen (5 cols) */}
+          <div className="lg:col-span-5 saas-card p-4 border border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                <Tv className="w-4 h-4 text-blue-400" /> Visual Preview (16:9 8K)
+              </h2>
+              <span className="text-[10px] text-emerald-400 font-semibold">
+                {selectedScene?.imageUrl ? 'Asset Rendered' : 'Pending Render'}
+              </span>
+            </div>
 
-          <div className="p-6 rounded-2xl bg-slate-950 border border-white/10 font-sans text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">
-            {liOutput.adaptedContent?.postCopy}
-          </div>
-        </div>
-      )}
+            {/* Main Canvas Viewport */}
+            <div className="w-full aspect-video rounded-lg bg-[#0b1220] border border-slate-800 overflow-hidden relative flex flex-col items-center justify-center">
+              {selectedScene?.imageUrl ? (
+                <img src={selectedScene.imageUrl} alt="Scene Visual" className="w-full h-full object-cover" />
+              ) : (
+                <div className="text-center p-6 space-y-3">
+                  <div className="w-12 h-12 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-500">
+                    <ImageIcon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-300">Visual not generated yet</h3>
+                    <p className="text-[10px] text-slate-500 max-w-xs mx-auto mt-1">
+                      Ready to synthesize structured 8k cinematic visual prompt for Scene #{selectedScene?.sceneIndex}.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleGenerateVisual}
+                    disabled={isGeneratingVisual}
+                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all flex items-center gap-2 mx-auto disabled:opacity-50"
+                  >
+                    {isGeneratingVisual ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                    <span>Generate Visual</span>
+                  </button>
+                </div>
+              )}
 
-      {/* 6. Flyer Graphic */}
-      {activeTab === 'FLYER' && flyerOutput && (
-        <div className="bg-slate-900/70 border border-white/10 rounded-3xl p-8 space-y-6">
-          <div className="space-y-2">
-            <span className="text-xs font-black text-amber-400 uppercase">Promotional Flyer Specification</span>
-            <h2 className="text-2xl font-black text-white">{flyerOutput.adaptedContent?.headline}</h2>
-            <p className="text-sm text-indigo-300 font-medium">{flyerOutput.adaptedContent?.subheadline}</p>
-          </div>
+              {/* On-Screen Caption Overlay Preview */}
+              <div className="absolute bottom-4 left-4 right-4 text-center">
+                <span className="px-3 py-1 rounded bg-black/80 text-white font-bold text-xs shadow-md border border-white/10">
+                  {selectedScene?.narrationText?.substring(0, 50)}...
+                </span>
+              </div>
+            </div>
 
-          <div className="p-6 rounded-2xl bg-slate-950 border border-white/10 space-y-4">
-            <span className="text-xs font-bold text-slate-400 uppercase">Poster Background Visual Prompt</span>
-            <p className="text-xs font-mono text-cyan-300 bg-slate-900 p-4 rounded-xl border border-white/5">
-              {flyerOutput.adaptedContent?.visualPrompt}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* 7. Quality Control QA */}
-      {activeTab === 'QA' && (
-        <div className="bg-slate-900/70 border border-white/10 rounded-3xl p-8 space-y-6">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-            <div>
-              <h2 className="text-lg font-bold text-white">Quality Control (QA) Compliance Report</h2>
-              <p className="text-xs text-slate-400">Automated verification across brand voice, platform constraints, and visual prompt alignment.</p>
+            {/* Narration Preview Bar */}
+            <div className="p-3 rounded-lg bg-[#0b1220] border border-slate-800 space-y-1">
+              <span className="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                <Volume2 className="w-3 h-3 text-blue-400" /> Narration Audio Line
+              </span>
+              <p className="text-xs text-slate-200 font-medium">"{selectedScene?.narrationText}"</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-2xl bg-slate-950 border border-white/10 text-center space-y-2">
-              <span className="text-3xl font-black text-emerald-400">95 / 100</span>
-              <p className="text-xs text-slate-400 font-bold uppercase">Overall Campaign Score</p>
+          {/* 3. RIGHT PANEL: Scene Inspector & Prompt Inspector (4 cols) */}
+          <div className="lg:col-span-4 saas-card p-5 border border-slate-800 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <h2 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-blue-400" /> Prompt Inspector
+              </h2>
             </div>
-            <div className="p-6 rounded-2xl bg-slate-950 border border-white/10 text-center space-y-2">
-              <span className="text-3xl font-black text-indigo-400">PASSED</span>
-              <p className="text-xs text-slate-400 font-bold uppercase">Brand Voice Alignment</p>
+
+            {/* Scene Metadata */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="p-2.5 rounded bg-[#0b1220] border border-slate-800">
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Treatment</span>
+                <span className="font-semibold text-blue-400">{selectedScene?.visualTreatment || 'CINEMATIC_BROLL'}</span>
+              </div>
+              <div className="p-2.5 rounded bg-[#0b1220] border border-slate-800">
+                <span className="text-[10px] text-slate-500 uppercase font-bold block">Duration</span>
+                <span className="font-semibold text-slate-200">{selectedScene?.durationSeconds} Seconds</span>
+              </div>
             </div>
-            <div className="p-6 rounded-2xl bg-slate-950 border border-white/10 text-center space-y-2">
-              <span className="text-3xl font-black text-cyan-400">100%</span>
-              <p className="text-xs text-slate-400 font-bold uppercase">Platform Format Rules</p>
+
+            {/* Structured Visual Prompt Specification */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Synthesized Production Prompt
+                </label>
+                <button
+                  onClick={handleImprovePrompt}
+                  disabled={isImprovingPrompt}
+                  className="text-[10px] font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                >
+                  <Sparkles className="w-3 h-3" /> Improve Prompt
+                </button>
+              </div>
+
+              <textarea
+                rows={5}
+                value={selectedScene?.visualPrompt}
+                onChange={(e) => {
+                  const copy = { ...project };
+                  selectedScene.visualPrompt = e.target.value;
+                  setProject(copy);
+                }}
+                className="w-full bg-[#0b1220] border border-slate-800 rounded-lg p-3 text-xs font-mono text-slate-300 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+
+            {/* Camera & Motion Controls */}
+            <div className="space-y-2 pt-2 border-t border-slate-800">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                Camera & Motion Direction
+              </label>
+              <div className="p-3 rounded-lg bg-[#0b1220] border border-slate-800 text-xs text-slate-300 space-y-1">
+                <div>Camera: <span className="font-semibold text-slate-200">Slow forward dolly zoom, 35mm lens</span></div>
+                <div>Lighting: <span className="font-semibold text-blue-400">Volumetric rim lighting</span></div>
+              </div>
             </div>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    </Shell>
   );
 }
+

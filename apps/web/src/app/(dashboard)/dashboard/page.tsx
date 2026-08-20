@@ -102,241 +102,171 @@ export default function CreatorDashboardPage() {
   return (
     <Shell>
       <div className="max-w-6xl mx-auto space-y-8 pb-12">
-        {/* Header Hero Banner */}
-        <div className="glass-panel p-8 rounded-3xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border border-white/10 shadow-2xl">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-indigo-600/30 via-purple-600/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
-
-          <div className="relative z-10 max-w-xl">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5 shadow-sm">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400 fill-indigo-400/20" />
-                AI Content Studio
+        {/* 1. Greeting & Workspace Hero Bar */}
+        <div className="saas-card p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-slate-800">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                Operating System v2.5
               </span>
-              <span className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                 Autopilot Active
               </span>
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight">
-              Studio Command Center
+            <h1 className="text-2xl font-bold text-slate-100">
+              Good morning, Creator.
             </h1>
-            <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-              Your autonomous AI content pipeline is actively researching trends, generating scripts, creating visuals, rendering videos, and publishing to your connected channels.
+            <p className="text-xs text-slate-400 mt-1">
+              Your AI Content Operating System is ready and actively monitoring trends.
             </p>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="relative z-10 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setAutomationActive(!automationActive)}
-              className={`px-4 py-3 rounded-xl font-extrabold text-xs transition-all border flex items-center gap-2 ${
-                automationActive
-                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'
-                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
-              }`}
+              className="px-3.5 py-2 rounded-lg text-xs font-semibold border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition-all flex items-center gap-2"
             >
-              {automationActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-amber-300" />}
-              <span>{automationActive ? 'Pause Automation' : 'Resume Automation'}</span>
+              {automationActive ? <Pause className="w-4 h-4 text-slate-400" /> : <Play className="w-4 h-4 text-emerald-400" />}
+              <span>{automationActive ? 'Pause Auto-Pilot' : 'Resume Auto-Pilot'}</span>
             </button>
 
-            <button
-              onClick={handleGenerateNow}
-              disabled={generatingNow}
-              className="px-5 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 text-white font-extrabold text-xs shadow-xl shadow-indigo-500/25 flex items-center gap-2 transition-all disabled:opacity-50"
+            <Link
+              href="/content/wizard"
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm flex items-center gap-2 transition-all"
             >
-              {generatingNow ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Zap className="w-4 h-4 fill-white" />
-              )}
-              <span>Generate Video Now</span>
-            </button>
+              <PlusCircle className="w-4 h-4" />
+              <span>Create Content</span>
+            </Link>
           </div>
         </div>
 
-        {/* Instant 30s Sandbox Test Run */}
-        <TestRunSandbox />
-
-        {/* Today's Overview Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="glass-panel p-5 rounded-2xl border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Today's Progress</span>
-              <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
-                <Video className="w-4 h-4" />
-              </div>
+        {/* 2. Active Content Plan Pipeline Bar */}
+        <div className="saas-card p-6 border border-slate-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+            <div>
+              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">ACTIVE CONTENT PLAN</span>
+              <h2 className="text-base font-bold text-slate-100">Tech & AI Innovations 2026</h2>
             </div>
-            <div className="text-2xl font-black text-white">2 / 2 Videos</div>
-            <p className="text-[11px] text-emerald-400 font-semibold mt-1 flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> 100% On Schedule Today
-            </p>
+            <div className="text-xs text-slate-400">
+              Next item: <span className="font-semibold text-slate-200">"How AI Agents Are Changing Small Businesses"</span>
+            </div>
           </div>
 
-          <div className="glass-panel p-5 rounded-2xl border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Next Publish Time</span>
-              <div className="p-2 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400">
-                <Clock className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-2xl font-black text-white">06:00 PM</div>
-            <p className="text-[11px] text-purple-300 font-semibold mt-1">
-              In 1 Hour 45 Minutes (YouTube)
-            </p>
-          </div>
-
-          <div className="glass-panel p-5 rounded-2xl border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Active Content Plan</span>
-              <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
-                <Layers className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-2xl font-black text-white">Tech AI 2026</div>
-            <p className="text-[11px] text-cyan-300 font-semibold mt-1">
-              2x Daily (Long Video + Shorts)
-            </p>
-          </div>
-
-          <div className="glass-panel p-5 rounded-2xl border border-white/10">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Studio Views</span>
-              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="text-2xl font-black text-white">48,250</div>
-            <p className="text-[11px] text-emerald-400 font-semibold mt-1">
-              +14.2% Growth This Week
-            </p>
-          </div>
-        </div>
-
-        {/* Main Workspace Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Upcoming Scheduled Posts Feed */}
-          <div className="glass-panel p-6 rounded-3xl lg:col-span-2 space-y-5 border border-white/10">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div>
-                <h2 className="text-base font-black text-white flex items-center gap-2">
-                  <Calendar className="w-4.5 h-4.5 text-indigo-400" /> Upcoming Scheduled Posts
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">Automated video creation pipeline status</p>
-              </div>
-              <Link
-                href="/calendar"
-                className="text-xs font-extrabold text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+          {/* Stepped Progress Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+            {[
+              { step: '1. Research', desc: 'Trends & Keywords', done: true },
+              { step: '2. Script', desc: 'Narrative Breakdown', done: true },
+              { step: '3. Visuals', desc: 'Cinematic B-Roll', active: true },
+              { step: '4. Render', desc: 'FFmpeg Assembly', done: false },
+              { step: '5. Quality QA', desc: 'Compliance & SEO', done: false },
+            ].map((st) => (
+              <div
+                key={st.step}
+                className={`p-3 rounded-lg border text-xs transition-all ${
+                  st.active
+                    ? 'bg-blue-600/10 border-blue-500/50 text-blue-300'
+                    : st.done
+                    ? 'bg-slate-900 border-slate-800 text-slate-300'
+                    : 'bg-slate-900/40 border-slate-800/40 text-slate-500'
+                }`}
               >
-                View Full Calendar →
+                <div className="font-bold flex items-center justify-between">
+                  <span>{st.step}</span>
+                  {st.done && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                  {st.active && <RefreshCw className="w-3.5 h-3.5 text-blue-400 animate-spin" />}
+                </div>
+                <div className="text-[10px] text-slate-400 mt-1">{st.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 3. Today's Status Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="saas-card p-5 border border-slate-800">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Today's Scheduled</div>
+            <div className="text-3xl font-bold text-slate-100">2 Items</div>
+            <p className="text-xs text-slate-400 mt-1">YouTube & Instagram Reels</p>
+          </div>
+
+          <div className="saas-card p-5 border border-slate-800">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">In Production</div>
+            <div className="text-3xl font-bold text-blue-400">1 Item</div>
+            <p className="text-xs text-slate-400 mt-1">Visual scene generation active</p>
+          </div>
+
+          <div className="saas-card p-5 border border-slate-800">
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Published Today</div>
+            <div className="text-3xl font-bold text-emerald-400">5 Items</div>
+            <p className="text-xs text-slate-400 mt-1">Across connected channels</p>
+          </div>
+        </div>
+
+        {/* 4. Upcoming Content Timeline & Performance Overview */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Timeline Feed */}
+          <div className="saas-card p-6 border border-slate-800 lg:col-span-2 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-400" /> Upcoming Content Schedule
+              </h2>
+              <Link href="/calendar" className="text-xs font-semibold text-blue-400 hover:text-blue-300">
+                View Calendar →
               </Link>
             </div>
 
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               {scheduledPosts.map((post) => (
                 <div
                   key={post.id}
-                  className="p-4 rounded-2xl bg-slate-900/60 border border-white/5 hover:border-indigo-500/30 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+                  className="p-3.5 rounded-lg bg-[#0b1220] border border-slate-800 flex items-center justify-between gap-4 hover:border-slate-700 transition-all"
                 >
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-16 h-10 rounded-xl bg-slate-800 overflow-hidden shrink-0 border border-white/10 relative">
-                      <img
-                        src={post.thumbnail}
-                        alt="Thumbnail"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-slate-950/20" />
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-9 rounded bg-slate-800 overflow-hidden shrink-0 border border-slate-700 relative">
+                      <img src={post.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
                     </div>
-
                     <div>
-                      <h3 className="text-xs font-bold text-white line-clamp-1">{post.title}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="px-2 py-0.5 text-[9px] font-black uppercase rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                          {post.type === 'LONG_VIDEO' ? '16:9 Long Video' : '9:16 Short'}
-                        </span>
-                        <span className="text-[11px] text-slate-400">{post.platform}</span>
-                      </div>
+                      <h3 className="text-xs font-semibold text-slate-200 line-clamp-1">{post.title}</h3>
+                      <span className="text-[10px] text-slate-400">{post.platform} • {post.scheduledTime}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-right">
-                    <div>
-                      <div className="text-xs font-extrabold text-slate-200">{post.scheduledTime}</div>
-                      <div className="text-[10px] font-bold text-amber-400 flex items-center gap-1 justify-end mt-0.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                        {post.statusStep}
-                      </div>
-                    </div>
-                  </div>
+                  <span className="px-2.5 py-1 text-[10px] font-semibold rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
+                    {post.statusStep}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Quick Content Creator & Channel Status */}
-          <div className="space-y-6 lg:col-span-1">
-            {/* Create Content Quick Launch Card */}
-            <div className="glass-panel p-6 rounded-3xl space-y-4 border border-white/10 bg-gradient-to-br from-indigo-900/20 via-slate-900/80 to-purple-900/20">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-400">
-                  <PlusCircle className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-sm text-white">Content Plan Studio</h3>
-                  <p className="text-[11px] text-slate-400">Configure niche & automated posting schedule</p>
-                </div>
+          {/* Performance Summary */}
+          <div className="saas-card p-6 border border-slate-800 space-y-4">
+            <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2 border-b border-slate-800 pb-3">
+              <TrendingUp className="w-4 h-4 text-emerald-400" /> Engine Performance
+            </h2>
+
+            <div className="space-y-3">
+              <div className="p-3 rounded-lg bg-[#0b1220] border border-slate-800 flex items-center justify-between">
+                <span className="text-xs text-slate-400">Total Views</span>
+                <span className="text-sm font-bold text-slate-100">48,250</span>
               </div>
-
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Set up your niche, target audience, brand voice, logo watermarks, and posting frequency in our step-by-step wizard.
-              </p>
-
-              <Link
-                href="/content/wizard"
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition-all"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Launch 9-Step Content Wizard</span>
-              </Link>
-            </div>
-
-            {/* Recent Published Content */}
-            <div className="glass-panel p-6 rounded-3xl space-y-4 border border-white/10">
-              <h3 className="font-extrabold text-xs text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                <span>Recent Published Videos</span>
-                <Link href="/videos" className="text-indigo-400 hover:text-indigo-300 text-[11px] font-bold">
-                  View All →
-                </Link>
-              </h3>
-
-              <div className="space-y-3">
-                {videos.length > 0 ? (
-                  videos.slice(0, 3).map((v) => (
-                    <div key={v.id} className="p-3 rounded-xl bg-slate-900/60 border border-white/5 flex items-center gap-3">
-                      <div className="w-12 h-8 rounded-lg bg-slate-800 shrink-0 border border-white/10 flex items-center justify-center">
-                        <Play className="w-4 h-4 text-indigo-400 fill-indigo-400" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-bold text-white truncate">{v.title}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-2">
-                          <span className="text-emerald-400 font-semibold">Published</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" /> 1.2k views
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-xs text-slate-400 italic text-center py-4 bg-slate-900/40 rounded-xl">
-                    No videos published yet. Launch your first content plan!
-                  </div>
-                )}
+              <div className="p-3 rounded-lg bg-[#0b1220] border border-slate-800 flex items-center justify-between">
+                <span className="text-xs text-slate-400">Avg Engagement Rate</span>
+                <span className="text-sm font-bold text-emerald-400">8.4%</span>
+              </div>
+              <div className="p-3 rounded-lg bg-[#0b1220] border border-slate-800 flex items-center justify-between">
+                <span className="text-xs text-slate-400">Published Assets</span>
+                <span className="text-sm font-bold text-slate-100">142</span>
               </div>
             </div>
+
+            <TestRunSandbox />
           </div>
         </div>
       </div>
     </Shell>
   );
+}
 }

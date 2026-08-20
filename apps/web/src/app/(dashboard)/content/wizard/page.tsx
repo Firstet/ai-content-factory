@@ -16,6 +16,10 @@ import {
   Clock,
   Zap,
   Layers,
+  Target,
+  Search,
+  Wand2,
+  Share2,
 } from 'lucide-react';
 import { MediaUploader } from '@/components/common/MediaUploader';
 import { VoicePreviewPlayer } from '@/components/common/VoicePreviewPlayer';
@@ -58,19 +62,21 @@ export default function ContentWizardPage() {
   });
 
   const steps = [
-    { num: 1, title: 'Choose Niche', icon: Layers },
-    { num: 2, title: 'Describe Brand', icon: Building2 },
-    { num: 3, title: 'Upload Logo', icon: ImageIcon },
-    { num: 4, title: 'Aspect & Captions', icon: Palette },
-    { num: 5, title: 'Social Accounts', icon: Tv },
-    { num: 6, title: 'Neural Voice', icon: KeyRound },
-    { num: 7, title: 'Set Schedule', icon: Clock },
-    { num: 8, title: 'Review', icon: CheckCircle2 },
-    { num: 9, title: 'Start Automation', icon: Zap },
+    { num: 1, title: 'Brand', icon: Building2 },
+    { num: 2, title: 'Niche', icon: Layers },
+    { num: 3, title: 'Audience', icon: Target },
+    { num: 4, title: 'Goal', icon: Zap },
+    { num: 5, title: 'Platforms', icon: Tv },
+    { num: 6, title: 'Strategy', icon: Sparkles },
+    { num: 7, title: 'Research', icon: Search },
+    { num: 8, title: 'Content Plan', icon: Clock },
+    { num: 9, title: 'Generate', icon: Wand2 },
+    { num: 10, title: 'Review', icon: CheckCircle2 },
+    { num: 11, title: 'Publish', icon: Share2 },
   ];
 
   const handleNext = () => {
-    if (currentStep < 9) setCurrentStep(currentStep + 1);
+    if (currentStep < 11) setCurrentStep(currentStep + 1);
   };
 
   const handleBack = () => {

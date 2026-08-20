@@ -21,13 +21,13 @@ export function Header({ onToggleMobileMenu }: HeaderProps) {
   };
 
   return (
-    <header className="h-16 border-b border-white/10 bg-slate-950/60 backdrop-blur-2xl px-4 md:px-8 flex items-center justify-between sticky top-0 z-30">
+    <header className="h-16 border-b border-slate-800 bg-[#111827] px-4 md:px-8 flex items-center justify-between sticky top-0 z-30">
       {/* Mobile Menu Button & Search Bar */}
       <div className="flex items-center gap-3 w-auto md:w-80">
         {onToggleMobileMenu && (
           <button
             onClick={onToggleMobileMenu}
-            className="p-2 rounded-xl bg-slate-900 border border-white/10 text-slate-300 hover:text-white md:hidden"
+            className="p-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:text-white md:hidden"
             title="Toggle Menu"
           >
             <Menu className="w-5 h-5" />
@@ -39,7 +39,7 @@ export function Header({ onToggleMobileMenu }: HeaderProps) {
           <input
             type="text"
             placeholder="Search content plans, scheduled posts, channels..."
-            className="w-full bg-slate-900/90 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 transition-all"
+            className="w-full bg-[#0b1220] border border-slate-800 rounded-lg pl-9 pr-4 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 transition-all"
           />
         </div>
       </div>
@@ -49,16 +49,16 @@ export function Header({ onToggleMobileMenu }: HeaderProps) {
         {/* Automation Pause/Resume Button */}
         <button
           onClick={() => setAutomationActive(!automationActive)}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold border transition-all flex items-center gap-2 ${
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-2 ${
             automationActive
-              ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'
-              : 'bg-amber-500/10 text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+              : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
           }`}
         >
           {automationActive ? (
             <>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>Automation Running</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>Automation Active</span>
             </>
           ) : (
             <>
@@ -71,28 +71,28 @@ export function Header({ onToggleMobileMenu }: HeaderProps) {
         {/* Quick Create Button */}
         <Link
           href="/content/wizard"
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:opacity-90 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition-all"
+          className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm flex items-center gap-2 transition-all"
         >
           <PlusCircle className="w-4 h-4" />
           <span>New Content Plan</span>
         </Link>
 
-        <div className="h-4 w-px bg-white/10"></div>
+        <div className="h-4 w-px bg-slate-800"></div>
 
         {/* Profile & Logout */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-md">
+          <div className="w-8 h-8 rounded-lg bg-blue-600/30 border border-blue-500/40 flex items-center justify-center text-xs font-bold text-blue-300">
             {user?.name?.[0] || 'C'}
           </div>
           <div className="text-left hidden sm:block">
-            <p className="text-xs font-bold text-white">{user?.name || 'Content Studio'}</p>
-            <p className="text-[10px] text-indigo-400 font-semibold">{user?.role || 'Creator'}</p>
+            <p className="text-xs font-bold text-slate-200">{user?.name || 'Content Studio'}</p>
+            <p className="text-[10px] text-slate-400 font-medium">{user?.role || 'Creator'}</p>
           </div>
 
           <button
             onClick={handleLogout}
             title="Logout"
-            className="p-2 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/5 transition-all ml-1"
+            className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition-all ml-1"
           >
             <LogOut className="w-4 h-4" />
           </button>
