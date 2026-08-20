@@ -103,6 +103,8 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      API_PORT: 3001
+      API_PREFIX: api
       DATABASE_URL: ${DATABASE_URL:-postgresql://acf_user:acf_password@postgres:5432/acf_db}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       JWT_SECRET: ${JWT_SECRET:-f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8}
