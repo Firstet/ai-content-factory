@@ -26,13 +26,32 @@ export class ContentProjectService {
   ) {}
 
   async create(dto: CreateProjectDto) {
-    const brand = await this.prisma.brand.findUniqueOrThrow({ where: { id: dto.brandId } });
+    let brandId = dto.brandId;
+    let brand = brandId ? await this.prisma.brand.findUnique({ where: { id: brandId } }) : null;
+
+    if (!brand) {
+      const firstBrand = await this.prisma.brand.findFirst();
+      if (firstBrand) {
+        brand = firstBrand;
+        brandId = firstBrand.id;
+      } else {
+        brand = await this.prisma.brand.create({
+          data: {
+            name: 'AI Content Studio Main',
+            voiceTone: 'Professional, Engaging, and Insightful',
+            targetAudience: 'Global Creators & Professionals',
+          },
+        });
+        brandId = brand.id;
+      }
+    }
+
     const niche = dto.nicheId ? await this.prisma.niche.findUnique({ where: { id: dto.nicheId } }) : null;
 
     const project = await this.prisma.contentProject.create({
       data: {
         title: dto.title,
-        brandId: dto.brandId,
+        brandId: brandId,
         nicheId: dto.nicheId,
         goal: dto.goal || 'ENGAGEMENT',
         platforms: dto.platforms || ['YOUTUBE', 'INSTAGRAM', 'TIKTOK', 'LINKEDIN'],
