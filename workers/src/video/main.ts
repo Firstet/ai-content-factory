@@ -38,15 +38,28 @@ createWorker(QUEUE_NAMES.VIDEO, async (job: Job) => {
 
     const audioAsset = assets.find((a: any) => a.type === 'AUDIO');
     const imageAssets = assets.filter((a: any) => a.type === 'IMAGE');
+    const subtitleAsset = assets.find((a: any) => a.type === 'SUBTITLE');
 
     if (!audioAsset) throw new Error('No audio asset found. Voice step may have failed.');
 
     await emitJobProgress(videoId, PipelineStep.VIDEO, 15, `Downloading ${imageAssets.length} images...`);
 
-    // 2. Download audio and images to temp directory
+    // 2. Download audio, images, and subtitles to temp directory
     const audioPath = path.join(tmpDir, 'audio.mp3');
     const audioData = await axios.get(audioAsset.url, { responseType: 'arraybuffer' });
     fs.writeFileSync(audioPath, Buffer.from(audioData.data));
+
+    let assPath: string | undefined;
+    if (subtitleAsset && subtitleAsset.url) {
+      try {
+        assPath = path.join(tmpDir, 'subtitles.ass');
+        const subData = await axios.get(subtitleAsset.url, { responseType: 'arraybuffer' });
+        fs.writeFileSync(assPath, Buffer.from(subData.data));
+      } catch (err: any) {
+        console.warn('Subtitle asset download failed, proceeding without burn-in:', err.message);
+        assPath = undefined;
+      }
+    }
 
     const imagePaths: string[] = [];
     for (let i = 0; i < imageAssets.length; i++) {
@@ -82,11 +95,11 @@ createWorker(QUEUE_NAMES.VIDEO, async (job: Job) => {
     const imageVideo = path.join(tmpDir, 'images.mp4');
     await createSlideshow(imagePaths, imageDuration, imageVideo);
 
-    await emitJobProgress(videoId, PipelineStep.VIDEO, 60, 'Adding audio track...');
+    await emitJobProgress(videoId, PipelineStep.VIDEO, 60, 'Adding audio track & burning in ASS subtitles...');
 
-    // 5. Merge audio + video
+    // 5. Merge audio + video + burn-in ASS subtitles
     const outputPath = path.join(tmpDir, 'output.mp4');
-    await mergeAudioVideo(imageVideo, audioPath, outputPath);
+    await mergeAudioVideo(imageVideo, audioPath, outputPath, assPath);
 
     await emitJobProgress(videoId, PipelineStep.VIDEO, 80, 'Uploading final video...');
 
@@ -185,21 +198,43 @@ function createSlideshow(imagePaths: string[], duration: number, output: string)
   });
 }
 
-function mergeAudioVideo(videoPath: string, audioPath: string, output: string): Promise<void> {
+function mergeAudioVideo(videoPath: string, audioPath: string, output: string, assPath?: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    ffmpeg()
+    const cmd = ffmpeg()
       .input(videoPath)
-      .input(audioPath)
-      .outputOptions([
-        '-c:v copy',
-        '-c:a aac',
-        '-b:a 192k',
-        '-shortest',
-        '-movflags +faststart',
-      ])
+      .input(audioPath);
+
+    const outputOptions = [
+      '-c:a aac',
+      '-b:a 192k',
+      '-shortest',
+      '-movflags +faststart',
+    ];
+
+    if (assPath && fs.existsSync(assPath)) {
+      const sanitizedAss = assPath.replace(/\\/g, '/');
+      cmd.videoFilters(`ass=${sanitizedAss}`);
+      outputOptions.push('-c:v libx264', '-preset fast', '-crf 22');
+    } else {
+      outputOptions.push('-c:v copy');
+    }
+
+    cmd
+      .outputOptions(outputOptions)
       .output(output)
       .on('end', () => resolve())
-      .on('error', reject)
+      .on('error', (err) => {
+        console.warn('FFmpeg subtitle burn-in warning:', err.message);
+        // Fallback merge without subtitle filter if ASS filter fails
+        ffmpeg()
+          .input(videoPath)
+          .input(audioPath)
+          .outputOptions(['-c:v copy', '-c:a aac', '-b:a 192k', '-shortest', '-movflags +faststart'])
+          .output(output)
+          .on('end', () => resolve())
+          .on('error', reject)
+          .run();
+      })
       .run();
   });
 }

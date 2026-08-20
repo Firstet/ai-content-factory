@@ -155,6 +155,11 @@ export function ContentPreviewModal({
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
+  // Subtitle Auto-Caption Style State
+  const [captionPreset, setCaptionPreset] = useState<'HORMOZI_YELLOW' | 'NEON_CYBERPUNK' | 'MINIMALIST_DARK' | 'BOLD_WHITE'>('HORMOZI_YELLOW');
+  const [captionPosition, setCaptionPosition] = useState<'BOTTOM' | 'MIDDLE' | 'TOP'>('BOTTOM');
+  const [activeWordIdx, setActiveWordIdx] = useState(0);
+
   // Full Sequential Video Auto-Play State
   const [isPlayingFullVideoSequence, setIsPlayingFullVideoSequence] = useState(false);
   const [isRenderingFullVideo, setIsRenderingFullVideo] = useState(false);
@@ -163,6 +168,20 @@ export function ContentPreviewModal({
   const [renderedMp4Url, setRenderedMp4Url] = useState<string | null>(videoUrl || null);
 
   const playbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Word-level subtitle karaoke animation effect
+  React.useEffect(() => {
+    const text = sceneList[activeSceneIndex]?.content || sceneList[activeSceneIndex]?.narration || '';
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.length === 0) return;
+
+    setActiveWordIdx(0);
+    const interval = setInterval(() => {
+      setActiveWordIdx((prev) => (prev + 1) % words.length);
+    }, 450);
+
+    return () => clearInterval(interval);
+  }, [activeSceneIndex, sceneList]);
 
   if (!isOpen) return null;
 
@@ -440,12 +459,12 @@ export function ContentPreviewModal({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left 2 Cols: Video & Teleprompter Player */}
               <div className="lg:col-span-2 space-y-4">
-                {/* Aspect Ratio Controls Bar */}
-                <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs">
-                  <span className="font-extrabold text-slate-300 text-[11px] flex items-center gap-1.5">
-                    <Film className="w-3.5 h-3.5 text-indigo-400" /> Player Display Aspect Ratio:
-                  </span>
+                {/* Aspect Ratio & Subtitle Style Controls Bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-xs">
                   <div className="flex items-center gap-1">
+                    <span className="font-extrabold text-slate-300 text-[11px] flex items-center gap-1.5 mr-1">
+                      <Film className="w-3.5 h-3.5 text-indigo-400" /> Ratio:
+                    </span>
                     <button
                       onClick={() => {
                         setAspectRatio('9:16');
@@ -456,13 +475,13 @@ export function ContentPreviewModal({
                           }))
                         );
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all ${
+                      className={`px-2 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all ${
                         aspectRatio === '9:16'
                           ? 'bg-indigo-600 text-white border border-indigo-400 shadow-md shadow-indigo-500/20'
                           : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
                       }`}
                     >
-                      📱 9:16 Vertical Shorts
+                      📱 9:16
                     </button>
                     <button
                       onClick={() => {
@@ -474,13 +493,13 @@ export function ContentPreviewModal({
                           }))
                         );
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all ${
+                      className={`px-2 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all ${
                         aspectRatio === '16:9'
                           ? 'bg-indigo-600 text-white border border-indigo-400 shadow-md shadow-indigo-500/20'
                           : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
                       }`}
                     >
-                      🖥️ 16:9 Widescreen
+                      🖥️ 16:9
                     </button>
                     <button
                       onClick={() => {
@@ -492,14 +511,37 @@ export function ContentPreviewModal({
                           }))
                         );
                       }}
-                      className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all ${
+                      className={`px-2 py-1 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition-all ${
                         aspectRatio === '1:1'
                           ? 'bg-indigo-600 text-white border border-indigo-400 shadow-md shadow-indigo-500/20'
                           : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
                       }`}
                     >
-                      🟦 1:1 Square
+                      🟦 1:1
                     </button>
+                  </div>
+
+                  {/* Subtitle Presets Switcher */}
+                  <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+                    <span className="font-extrabold text-slate-400 text-[10px] mr-1 shrink-0">Subtitles:</span>
+                    {[
+                      { id: 'HORMOZI_YELLOW', label: '⚡ Hormozi' },
+                      { id: 'NEON_CYBERPUNK', label: '🔮 Neon' },
+                      { id: 'MINIMALIST_DARK', label: '⬛ Minimal' },
+                      { id: 'BOLD_WHITE', label: '🔤 Bold' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.id}
+                        onClick={() => setCaptionPreset(preset.id as any)}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-black transition-all shrink-0 ${
+                          captionPreset === preset.id
+                            ? 'bg-yellow-400 text-slate-950 shadow-sm'
+                            : 'bg-slate-900 text-slate-400 hover:text-white border border-white/5'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -553,18 +595,58 @@ export function ContentPreviewModal({
                       {/* Overlay Gradient */}
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
 
-                      {/* Subtitle Teleprompter Overlay */}
-                      <div className="absolute bottom-6 inset-x-6 text-center space-y-2">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-950/90 backdrop-blur-md border border-white/20 text-white font-extrabold text-xs sm:text-sm shadow-xl max-w-xl">
-                          <span>"{currentScene.content || currentScene.narration}"</span>
+                      {/* Subtitle Teleprompter Overlay with Preset Styling */}
+                      <div
+                        className={`absolute inset-x-4 text-center space-y-2 transition-all ${
+                          captionPosition === 'TOP'
+                            ? 'top-14'
+                            : captionPosition === 'MIDDLE'
+                            ? 'top-1/2 -translate-y-1/2'
+                            : 'bottom-6'
+                        }`}
+                      >
+                        <div
+                          className={`inline-flex flex-wrap items-center justify-center gap-1 px-4 py-2.5 rounded-2xl shadow-2xl backdrop-blur-md max-w-lg mx-auto transition-all ${
+                            captionPreset === 'HORMOZI_YELLOW'
+                              ? 'bg-slate-950/90 border border-yellow-400/50 text-yellow-400 font-black text-xs sm:text-sm tracking-wide shadow-yellow-500/20'
+                              : captionPreset === 'NEON_CYBERPUNK'
+                              ? 'bg-purple-950/90 border border-cyan-400/60 text-cyan-300 font-extrabold text-xs sm:text-sm uppercase tracking-wider shadow-cyan-500/30'
+                              : captionPreset === 'MINIMALIST_DARK'
+                              ? 'bg-slate-900/90 border border-white/10 text-white font-medium text-xs'
+                              : 'bg-black/95 border-2 border-white text-white font-black text-xs sm:text-base uppercase tracking-tight'
+                          }`}
+                        >
+                          {(currentScene.content || currentScene.narration || '')
+                            .split(/\s+/)
+                            .filter(Boolean)
+                            .map((word, wIdx) => (
+                              <span
+                                key={wIdx}
+                                className={`transition-all duration-200 ${
+                                  wIdx === activeWordIdx
+                                    ? captionPreset === 'HORMOZI_YELLOW'
+                                      ? 'text-emerald-400 scale-110 underline decoration-2 font-black'
+                                      : captionPreset === 'NEON_CYBERPUNK'
+                                      ? 'text-pink-400 scale-110 font-black drop-shadow-[0_0_8px_rgba(244,63,94,1)]'
+                                      : captionPreset === 'MINIMALIST_DARK'
+                                      ? 'text-indigo-400 font-bold underline'
+                                      : 'text-yellow-400 scale-110 font-black'
+                                    : ''
+                                }`}
+                              >
+                                {word}
+                              </span>
+                            ))}
+
                           <button
                             onClick={() => handleSpeakSceneNarration(currentScene.content || currentScene.narration || '')}
                             title="Listen to AI Voice Narration for this Scene"
-                            className="shrink-0 p-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-500/30"
+                            className="ml-2 shrink-0 p-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md shadow-indigo-500/30"
                           >
-                            <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-pulse text-amber-300' : ''}`} />
+                            <Volume2 className={`w-3.5 h-3.5 ${isSpeaking ? 'animate-pulse text-amber-300' : ''}`} />
                           </button>
                         </div>
+
                         <div className="text-[10px] font-mono text-slate-400 flex items-center justify-center gap-2">
                           <span>Duration: {currentScene.durationSeconds || 10}s</span>
                           <span>•</span>
