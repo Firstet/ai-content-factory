@@ -48,13 +48,13 @@ const SUPPORTED_CATALOG = [
   },
   {
     id: 'POLLINATIONS',
-    name: 'Pollinations AI (LLM & Text)',
-    protocol: 'OpenAI-compatible',
-    category: 'LLM',
-    capabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING'],
+    name: 'Pollinations AI (Video, Image & B-Roll)',
+    protocol: 'Pollinations REST API',
+    category: 'MEDIA',
+    capabilities: ['IMAGE_GENERATION', 'VIDEO_GENERATION', 'BROLL_GENERATION'],
     placeholder: 'sk_...',
     defaultBaseUrl: 'https://gen.pollinations.ai',
-    defaultModel: 'openai',
+    defaultModel: 'flux',
     isFree: true,
   },
   {

@@ -144,16 +144,25 @@ export class ApiKeysService {
         console.log('[ApiKeysService] Auto-seeded default NVIDIA API key into database.');
       }
 
-      // 2. Ensure Pollinations AI Key
+      // 2. Ensure Pollinations AI Key (Configured for Video, Image, and B-Roll)
       let pollinationsProvider = await this.prisma.provider.findFirst({ where: { name: 'POLLINATIONS' } });
       if (!pollinationsProvider) {
         pollinationsProvider = await this.prisma.provider.create({
           data: {
             name: 'POLLINATIONS',
-            displayName: 'Pollinations AI (LLM & Text)',
+            displayName: 'Pollinations AI (Video, Image & B-Roll)',
             enabled: true,
-            capabilities: ['llm', 'text', 'image', 'video'],
-            preferredFor: ['script', 'research', 'image'],
+            capabilities: ['image', 'video', 'broll', 'visuals', 'llm', 'text'],
+            preferredFor: ['image', 'video', 'broll', 'visuals'],
+          },
+        });
+      } else {
+        await this.prisma.provider.update({
+          where: { id: pollinationsProvider.id },
+          data: {
+            displayName: 'Pollinations AI (Video, Image & B-Roll)',
+            capabilities: ['image', 'video', 'broll', 'visuals', 'llm', 'text'],
+            preferredFor: ['image', 'video', 'broll', 'visuals'],
           },
         });
       }
@@ -172,12 +181,20 @@ export class ApiKeysService {
             platform: 'https://gen.pollinations.ai|protocol:OpenAI-compatible',
             keyType: 'api',
             status: 'CONNECTED',
-            discoveredModels: ['openai', 'openai-fast', 'qwen', 'mistral', 'llama', 'deepseek'],
-            discoveredCapabilities: ['TEXT_GENERATION', 'STRUCTURED_TEXT', 'RESEARCH', 'SCRIPTWRITING', 'IMAGE_GENERATION'],
+            discoveredModels: ['flux', 'turbo', 'pollinations-video-v1', 'openai'],
+            discoveredCapabilities: ['IMAGE_GENERATION', 'VIDEO_GENERATION', 'BROLL_GENERATION', 'TEXT_GENERATION'],
             lastTestedAt: new Date(),
           },
         });
         console.log('[ApiKeysService] Auto-seeded default Pollinations API key into database.');
+      } else {
+        await this.prisma.apiKey.update({
+          where: { id: existingPollinationsKey.id },
+          data: {
+            discoveredModels: ['flux', 'turbo', 'pollinations-video-v1', 'openai'],
+            discoveredCapabilities: ['IMAGE_GENERATION', 'VIDEO_GENERATION', 'BROLL_GENERATION', 'TEXT_GENERATION'],
+          },
+        });
       }
     } catch (e: any) {
       console.warn('[ApiKeysService] Error ensuring default API keys:', e.message);
